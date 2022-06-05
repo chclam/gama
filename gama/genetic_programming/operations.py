@@ -42,3 +42,7 @@ def create_random_expression(
         last_primitive_node = primitive_node
 
     return learner_node
+
+def create_random_encoders(primitive_set, min_length=1, max_length=2): 
+    from sklearn.compose import make_column_transformer 
+    pass

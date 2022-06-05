@@ -289,7 +289,7 @@ class Gama(ABC):
             mate=partial(random_crossover, max_length=max_pipeline_length),
             create_from_population=partial(create_from_population, cxpb=0.2, mutpb=0.8),
             create_new=partial(
-                create_random_expression,
+                create_random_expression, # <------- Provide a function that fixes the machine learning algs. and randomizes encoders
                 primitive_set=self._pset,
                 max_length=max_start_length,
             ),
