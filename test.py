@@ -4,19 +4,21 @@ from sklearn.metrics import log_loss, accuracy_score
 from gama import GamaClassifier
 import os
 import numpy as np
-import openml
 import pandas as pd
 
 if __name__ == '__main__':
   CACHE_FOLDER = "cache_data"
 
-  if "X.pkl" in os.listdir(CACHE_FOLDER) and "y.pkl" in os.listdir(CACHE_FOLDER):
+  if os.path.isfile(f"{CACHE_FOLDER}/X.pkl") and os.path.isfile(f"{CACHE_FOLDER}/y.pkl"):
     X = pd.read_pickle(f"{CACHE_FOLDER}/X.pkl")
     y = pd.read_pickle(f"{CACHE_FOLDER}/y.pkl")
   else:
+    import openml
     dataset = openml.datasets.get_dataset(42078) # Beer review data set
     X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute,
                                   dataset_format="dataframe")
+    if not os.path.isdir(CACHE_FOLDER):
+      os.mkdir(CACHE_FOLDER)
     X.to_pickle(f"{CACHE_FOLDER}/X.pkl")
     y.to_pickle(f"{CACHE_FOLDER}/y.pkl")
 
