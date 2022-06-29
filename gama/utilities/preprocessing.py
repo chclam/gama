@@ -4,10 +4,10 @@ import category_encoders as ce
 import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.compose import ColumnTransformer
 
 log = logging.getLogger(__name__)
-
 
 def select_categorical_columns(
     df: pd.DataFrame,
@@ -41,7 +41,6 @@ def select_categorical_columns(
             ):
                 yield column
 
-
 def basic_encoding(x: pd.DataFrame, is_classification: bool):
     """ Perform 'basic' encoding of categorical features.
 
@@ -49,17 +48,29 @@ def basic_encoding(x: pd.DataFrame, is_classification: bool):
       - Ordinal encoding for features with 2 or fewer unique values.
       - One hot encoding for features with at most 10 unique values.
       - Ordinal encoding for features with 11+ unique values, if y is categorical.
+     
+     Some comments:
+      - Why use ordinal encoder when features are not necessarily ordinal? It seems to be used just for the sake of encoding it.
+
+     To do:
+      - Make it pass on a column transformer containing the encoders.
      """
-    ord_features = list(select_categorical_columns(x, max_f=2))
+    ord_features = list(select_categorical_columns(x, max_f=2)) # are ord_features actually ordinal?
     if is_classification:
         ord_features.extend(select_categorical_columns(x, min_f=11))
     leq_10_features = list(select_categorical_columns(x, min_f=3, max_f=10))
 
-    encoding_steps = [
-        ("ord-enc", ce.OrdinalEncoder(cols=ord_features, drop_invariant=True)),
-        ("oh-enc", ce.OneHotEncoder(cols=leq_10_features, handle_missing="value")),
-    ]
-    encoding_pipeline = Pipeline(encoding_steps)
+#    encoding_steps = [
+#        ("ord-enc", ce.OrdinalEncoder(cols=ord_features, drop_invariant=True)),
+#        ("oh-enc", ce.OneHotEncoder(cols=leq_10_features, handle_missing="value")),
+#    ]
+#    encoding_pipeline = Pipeline(encoding_steps)
+
+    encoding_steps = ColumnTransformer([
+        ("ord-enc", ce.OrdinalEncoder(drop_invariant=True), ord_features),
+        ("oh-enc", ce.OneHotEncoder(handle_missing="value"), leq_10_features)
+    ])
+    encoding_pipeline = PandasPipeline([(("column_transformer", encoding_steps))])
     x_enc = encoding_pipeline.fit_transform(x, y=None)  # Is this dangerous?
     return x_enc, encoding_pipeline
 
@@ -71,6 +82,9 @@ def basic_pipeline_extension(
 
     TargetEncoding is will encode categorical features with more than 10 unique values,
     if y is not categorical. SimpleImputer imputes with the median.
+
+    To do:
+      - include the steps here into the column transformer in basic_encoder() (above)
     """
     # These steps need to be in the pipeline because they need to be trained each fold.
     extension_steps = []
@@ -78,8 +92,19 @@ def basic_pipeline_extension(
         # TargetEncoder is broken with categorical target
         many_factor_features = list(select_categorical_columns(x, min_f=11))
         extension_steps.append(
-            ("target_enc", ce.TargetEncoder(cols=many_factor_features))
+            [("target_enc", ce.TargetEncoder(), many_factor_features)]
         )
-    extension_steps.append(("imputation", SimpleImputer(strategy="median")))
+    extension_steps.append(("imputation", PandasSimpleImputer(strategy="median")))
 
     return extension_steps
+
+class PandasSimpleImputer(SimpleImputer):
+  def transform(self, X, y=None):
+    return pd.DataFrame(super().transform(X), columns=X.columns, index=X.index)
+
+class PandasPipeline(Pipeline):
+  def fit_transform(self, X, y=None):
+    return pd.DataFrame(super().fit_transform(X, y), index=X.index)
+
+  def transform(self, X, y=None):
+    return pd.DataFrame(super().transform(X), index=X.index)

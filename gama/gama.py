@@ -557,11 +557,10 @@ class Gama(ABC):
             activity_meta=[self._post_processing.__class__.__name__],
         ):
             best_individuals = list(
-                reversed(
-                    sorted(
-                        self._final_pop,
-                        key=lambda ind: cast(Fitness, ind.fitness).values,
-                    )
+                sorted(
+                    self._final_pop,
+                    key=lambda ind: cast(Fitness, ind.fitness).values,
+                    reverse=True
                 )
             )
             self._post_processing.dynamic_defaults(self)
