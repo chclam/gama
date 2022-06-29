@@ -37,7 +37,7 @@ from gama.utilities.metrics import scoring_to_metric
 
 from gama.__version__ import __version__
 from gama.data_loading import X_y_from_file
-from gama.data_formatting import format_x_y
+from gama.data_formatting import format_x_y, infer_categoricals_inplace
 from gama.search_methods.async_ea import AsyncEA
 from gama.utilities.generic.timekeeper import TimeKeeper
 from gama.logging.utility_functions import register_stream_log
@@ -497,6 +497,9 @@ class Gama(ABC):
             "preprocessing", activity_meta=["default"]
         ):
             x, self._y = format_x_y(x, y)
+            # Use included data type inferer from GAMA to deal with categorical data.
+            # Replace it with a better inferer later, e.g. method by van Lith.
+            infer_categoricals_inplace(x)
             self._inferred_dtypes = x.dtypes
             is_classification = hasattr(self, "_label_encoder")
             self._x, self._basic_encoding_pipeline = basic_encoding(
