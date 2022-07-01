@@ -66,11 +66,14 @@ def basic_encoding(x: pd.DataFrame, is_classification: bool):
 #    ]
 #    encoding_pipeline = Pipeline(encoding_steps)
 
-    encoding_steps = ColumnTransformer([
+    encoding_steps = ColumnTransformer(
+      transformers=[
         ("ord-enc", ce.OrdinalEncoder(drop_invariant=True), ord_features),
         ("oh-enc", ce.OneHotEncoder(handle_missing="value"), leq_10_features)
-    ])
-    encoding_pipeline = PandasPipeline([(("column_transformer", encoding_steps))])
+      ],
+      remainder="passthrough"
+    )
+    encoding_pipeline = Pipeline([(("column_transformer", encoding_steps))])
     x_enc = encoding_pipeline.fit_transform(x, y=None)  # Is this dangerous?
     return x_enc, encoding_pipeline
 
@@ -94,17 +97,7 @@ def basic_pipeline_extension(
         extension_steps.append(
             [("target_enc", ce.TargetEncoder(), many_factor_features)]
         )
-    extension_steps.append(("imputation", PandasSimpleImputer(strategy="median")))
+    extension_steps.append(("imputation", SimpleImputer(strategy="median")))
 
     return extension_steps
 
-class PandasSimpleImputer(SimpleImputer):
-  def transform(self, X, y=None):
-    return pd.DataFrame(super().transform(X), columns=X.columns, index=X.index)
-
-class PandasPipeline(Pipeline):
-  def fit_transform(self, X, y=None):
-    return pd.DataFrame(super().fit_transform(X, y), index=X.index)
-
-  def transform(self, X, y=None):
-    return pd.DataFrame(super().transform(X), index=X.index)

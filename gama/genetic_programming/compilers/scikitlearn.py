@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 import os
 import time
-from typing import Callable, Tuple, Optional, Sequence
+from typing import Callable, Tuple, Optional, Sequence, Union
 
 import stopit
 from sklearn.base import TransformerMixin, is_classifier
@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline
 from gama.utilities.evaluation_library import Evaluation
 from gama.utilities.generic.stopwatch import Stopwatch
 import numpy as np
+import pandas as pd
 from gama.utilities.metrics import Metric
 from gama.genetic_programming.components import Individual, PrimitiveNode, Fitness
 
@@ -55,7 +56,7 @@ def object_is_valid_pipeline(o):
 
 
 def evaluate_pipeline(
-    pipeline, x, y_train, timeout: float, metrics: Tuple[Metric], cv=5, subsample=None,
+    pipeline, x: Union[pd.DataFrame, np.ndarray], y_train, timeout: float, metrics: Tuple[Metric], cv=5, subsample=None,
 ) -> Tuple:
     """ Score `pipeline` with k-fold CV according to `metrics` on (a subsample of) X, y
 
@@ -67,10 +68,17 @@ def evaluate_pipeline(
         estimators: list of fitted pipelines if successful, None if not
         error: None if successful, otherwise an Exception
     """
+    if not isinstance(x, pd.DataFrame):
+        if isinstance(x, np.ndarray):
+            x = pd.DataFrame(x)
+        else:
+            raise TypeError("x must be of type pandas DataFrame or numpy array.")
+
     if not object_is_valid_pipeline(pipeline):
         raise TypeError(f"Pipeline must not be None and requires fit, predict, steps.")
     if not timeout > 0:
         raise ValueError(f"`timeout` must be greater than 0, is {timeout}.")
+
 
     prediction, estimators = None, None
     # default score for e.g. timeout or failure
