@@ -5,9 +5,11 @@ from gama import GamaClassifier
 import os
 import numpy as np
 import pandas as pd
+import sys
 
 if __name__ == '__main__':
   CACHE_FOLDER = "cache_data"
+  EVAL_TIME = int(sys.argv[1]) if len(sys.argv) > 1 else 10 # in seconds
 
   if os.path.isfile(f"{CACHE_FOLDER}/X.pkl") and os.path.isfile(f"{CACHE_FOLDER}/y.pkl"):
     X = pd.read_pickle(f"{CACHE_FOLDER}/X.pkl")
@@ -22,10 +24,9 @@ if __name__ == '__main__':
     X.to_pickle(f"{CACHE_FOLDER}/X.pkl")
     y.to_pickle(f"{CACHE_FOLDER}/y.pkl")
 
-  X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
+  X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0, train_size=0.02, test_size=0.01)
 
-  automl = GamaClassifier(max_total_time=10, store="nothing")
-  print("Starting fit.")
+  automl = GamaClassifier(max_total_time=EVAL_TIME, store="logs")
   automl.fit(X_train, y_train)
 
   label_predictions = automl.predict(X_test)
