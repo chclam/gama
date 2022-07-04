@@ -83,6 +83,7 @@ def format_x_y(
     y: Union[pd.DataFrame, pd.Series, np.ndarray],
     y_type: Type = pd.Series,
     remove_unlabeled: bool = True,
+    infer_categoricals: bool = True
 ) -> Tuple[pd.DataFrame, Union[pd.DataFrame, pd.Series]]:
     """ Take (X,y) data and convert it to a (pd.DataFrame, pd.Series) tuple.
 
@@ -107,7 +108,9 @@ def format_x_y(
     if not isinstance(y, y_type):
         y = format_y(y, y_type)
 
+    
     if remove_unlabeled:
         x, y = remove_unlabeled_rows(x, y)
 
+    infer_categoricals_inplace(x)
     return x, y
