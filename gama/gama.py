@@ -244,6 +244,7 @@ class Gama(ABC):
 
         self._x: Optional[pd.DataFrame] = None
         self._y: Optional[pd.DataFrame] = None
+        self.x_raw: Optional[pd.DataFrame] = None
         self._basic_encoding_pipeline: Optional[Pipeline] = None
         self._fixed_pipeline_extension: List[Tuple[str, TransformerMixin]] = []
         self._inferred_dtypes: List[Type] = []
@@ -498,6 +499,8 @@ class Gama(ABC):
         ):
             x, self._y = format_x_y(x, y)
             self._inferred_dtypes = x.dtypes
+            # save a pointer to a raw copy of X for FastTextClassifier
+            self.x_raw = x.copy()
             is_classification = hasattr(self, "_label_encoder")
             self._x, self._basic_encoding_pipeline = basic_encoding(
                 x, is_classification
@@ -553,6 +556,9 @@ class Gama(ABC):
             time_limit=int(self._time_manager.total_time_remaining),
             activity_meta=[self._post_processing.__class__.__name__],
         ):
+            if not self._final_pop:
+                print(f"No pipeline is added to the final population: {self._final_pop}")
+                exit(0)
             best_individuals = list(
                 reversed(
                     sorted(
@@ -593,6 +599,7 @@ class Gama(ABC):
             x=self._x,
             y_train=self._y,
             metrics=self._metrics,
+            x_raw=self.x_raw
         )
         AsyncEvaluator.defaults = dict(evaluate_pipeline=evaluate_pipeline)
 
@@ -611,6 +618,7 @@ class Gama(ABC):
         except KeyboardInterrupt:
             log.info("Search phase terminated because of Keyboard Interrupt.")
 
+        import pdb; pdb.set_trace()
         self._final_pop = self._search_method.output
         n_evaluations = len(self._evaluation_library.evaluations)
         log.info(f"Search phase evaluated {n_evaluations} individuals.")
