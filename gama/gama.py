@@ -573,6 +573,7 @@ class Gama(ABC):
                 self._y,
                 self._time_manager.total_time_remaining,
                 best_individuals,
+                self.x_raw
             )
         if not self._store == "all":
             to_clean = dict(nothing="all", logs="evaluations", models="logs")

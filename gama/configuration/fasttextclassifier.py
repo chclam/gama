@@ -4,50 +4,65 @@ import pandas as pd
 from sklearn.metrics import accuracy_score 
 from datetime import datetime
 from sklearn.base import ClassifierMixin, BaseEstimator
+import os
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, lr=0.1, epoch=5, wordNgrams=1):
+  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0):
     self._estimator_type = "classifier"
     self.classes_ = None
     self.model_filename = None
     self.lr = lr
     self.epoch = epoch
     self.wordNgrams = wordNgrams
+    self.minn = minn
+    self.maxn = maxn
     
-  def fit(self, X, y):
+  def fit(self, X, y, classes=None):
+    print("Yoooo ik zit te fitten.")
+    if not os.path.isdir("cache"):
+      os.mkdir("cache")
     data_fn = "cache/test_data.txt"
     data = self.preprocess(X, y)
-    self.classes_ = sorted(list(pd.Series(y).unique()))
+      
+    if self.classes_ is None:
+      self.classes_ = sorted(list(pd.Series(y).unique()))
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     with open(data_fn, "w+") as out:
       out.write(data.to_string(index=False))
-    model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams)
+    model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn)
     self.model_filename = f"cache/ft_model_{datetime.now()}.bin"
     model.save_model(self.model_filename)
 
   def predict(self, X, ret_proba=False):
+    print("Yoooo ik zit te predicten.")
     if self.model_filename is None:
       raise Exception("Model is not fitted yet. Please fit the model first.")
     pd.set_option('display.max_colwidth', None)
     data = self.preprocess(X).to_string(index=False)
     data = data.split("\n") # split the data into an array of rows
     model = fasttext.load_model(self.model_filename)
-    labels_pred, probs_pred = model.predict(data, k=len(self.classes_) if ret_proba else 1)
+    classes_pred, probs_pred = model.predict(data, k=len(self.classes_) if ret_proba else 1)
     if not ret_proba:
       # flatten list and get rid of "__label__" prefix
       # TODO: conversion to int is only needed if label encoder is used.
-      return [int(x[0].replace("__label__", "")) for x in labels_pred] 
+      return [int(x[0].replace("__label__", "")) for x in classes_pred]
     else:
       ret = []
-      for row_labels, row_probs in zip(labels_pred, probs_pred):
-        sorted_by_labels = sorted(list(zip(row_labels, row_probs)), key=lambda x: x[0])
-        ret.append([lbl[1] for lbl in sorted_by_labels])
+      for row_classes, row_probs in zip(classes_pred, probs_pred):
+        sorted_by_classes = sorted(list(zip(row_classes, row_probs)), key=lambda x: x[0])
+        probas = [lbl[1] for lbl in sorted_by_classes]
+        # make sure probabilities nicely sum up to 1 by subtracting the excess from the highest class probability.
+        # highest because subtracting from lowest can result in negative numbers.
+        probas[np.argmax(probas)] -= sum(probas) - 1.
+        ret.append(probas)
       return np.array(ret)
 
   def predict_proba(self, X):
+    print("Yoooo ik zit de probas (bobas) te predicten.")
     return self.predict(X, ret_proba=True)
   
   def score(self, X, y_true):
+    print("huh, waarom zit je te scoren man")
     y_pred = self.predict(X)
     return accuracy_score(y_true, y_pred)
 
@@ -63,7 +78,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     # get rid of this
     print(model.test(val_data_name, k=5))
 
-  def preprocess(self, X, y=None, del_spec_chars=False):
+  def preprocess(self, X, y=None, del_spec_chars=True):
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
     if y is not None:
       y = pd.DataFrame(y).reset_index(drop=True)
@@ -88,3 +103,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       ret = ret.str.replace("\\s", " ", regex=True)
       ret = ret.str.replace("[ ]+", " ", regex=True)
     return ret
+
+  def set_classes(self, classes):
+    self.classes_ = sorted(list(classes))

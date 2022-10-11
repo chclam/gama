@@ -55,7 +55,7 @@ def object_is_valid_pipeline(o):
 
 
 def evaluate_pipeline(
-    pipeline, x, y_train, timeout: float, metrics: Tuple[Metric], cv=5, subsample=None,
+    pipeline, x, y_train, timeout: float, metrics: Tuple[Metric], cv=5, subsample=None, x_raw=None
 ) -> Tuple:
     """ Score `pipeline` with k-fold CV according to `metrics` on (a subsample of) X, y
 
@@ -71,6 +71,13 @@ def evaluate_pipeline(
         raise TypeError(f"Pipeline must not be None and requires fit, predict, steps.")
     if not timeout > 0:
         raise ValueError(f"`timeout` must be greater than 0, is {timeout}.")
+
+
+    from gama.configuration.fasttextclassifier import FastTextClassifier
+
+    # check if fasttextclassifier is in the pipeline
+    if any([isinstance(step[1], FastTextClassifier) for step in pipeline.steps]):
+        x = x_raw
 
     prediction, estimators = None, None
     # default score for e.g. timeout or failure

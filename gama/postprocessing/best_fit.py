@@ -21,10 +21,11 @@ class BestFitPostProcessing(BasePostProcessing):
         self._selected_individual: Optional[Individual] = None
 
     def post_process(
-        self, x: pd.DataFrame, y: pd.Series, timeout: float, selection: List[Individual]
+        self, x: pd.DataFrame, y: pd.Series, timeout: float, selection: List[Individual], x_raw=None
     ) -> object:
         self._selected_individual = selection[0]
-        return self._selected_individual.pipeline.fit(x, y)
+        return self._selected_individual.pipeline.fit(x_raw, y)
+        #return self._selected_individual.pipeline.fit(x, y)
 
     def to_code(
         self, preprocessing: Sequence[Tuple[str, TransformerMixin]] = None
