@@ -8,6 +8,7 @@ from gama.genetic_programming.components import (
     DATA_TERMINAL,
 )
 
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 def random_terminals_for_primitive(
     primitive_set: dict, primitive: Primitive
@@ -33,6 +34,10 @@ def create_random_expression(
     learner_node = random_primitive_node(
         output_type="prediction", primitive_set=primitive_set
     )
+
+    if getattr(learner_node._primitive, "identifier") is FastTextClassifier:
+        return learner_node # avoid adding any preprocessing steps to FT
+
     last_primitive_node = learner_node
     for _ in range(individual_length - 1):
         primitive_node = random_primitive_node(

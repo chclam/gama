@@ -18,7 +18,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.maxn = maxn
     
   def fit(self, X, y, classes=None):
-    print("Yoooo ik zit te fitten.")
     if not os.path.isdir("cache"):
       os.mkdir("cache")
     data_fn = "cache/test_data.txt"
@@ -34,7 +33,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     model.save_model(self.model_filename)
 
   def predict(self, X, ret_proba=False):
-    print("Yoooo ik zit te predicten.")
     if self.model_filename is None:
       raise Exception("Model is not fitted yet. Please fit the model first.")
     pd.set_option('display.max_colwidth', None)
@@ -58,11 +56,9 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       return np.array(ret)
 
   def predict_proba(self, X):
-    print("Yoooo ik zit de probas (bobas) te predicten.")
     return self.predict(X, ret_proba=True)
   
   def score(self, X, y_true):
-    print("huh, waarom zit je te scoren man")
     y_pred = self.predict(X)
     return accuracy_score(y_true, y_pred)
 

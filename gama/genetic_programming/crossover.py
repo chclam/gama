@@ -3,6 +3,7 @@ import random
 from typing import List, Callable, Iterable, Optional, Tuple
 
 from gama.genetic_programming.components import Individual
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 
 def random_crossover(
@@ -32,6 +33,9 @@ def random_crossover(
     if max_length is not None and len(ind2.primitives) > max_length:
         raise ValueError(f"`individual2` ({ind2}) exceeds `max_length` ({max_length}).")
 
+    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+        return ind1, ind2
+
     crossover_choices = _valid_crossover_functions(ind1, ind2)
     if len(crossover_choices) == 0:
         raise ValueError(f"{ind1.pipeline_str()} and {ind2.pipeline_str()} can't mate.")
@@ -54,6 +58,10 @@ def crossover_primitives(
     ind2: Individual
         The individual to crossover with individual1.
     """
+
+    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+        return ind1, ind2
+
     p1_node = random.choice(list(ind1.primitives)[:-1])
     p2_node = random.choice(list(ind2.primitives)[:-1])
     p1_node._data_node, p2_node._data_node = p2_node._data_node, p1_node._data_node
@@ -74,6 +82,10 @@ def crossover_terminals(
     ind2: Individual
         The individual to crossover with individual1.
     """
+
+    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+        return ind1, ind2
+
     options = _shared_terminals(ind1, ind2, with_indices=True, value_match="different")
     i, ind1_term, j, ind2_term = random.choice(list(options))
     ind1.replace_terminal(i, ind2_term)

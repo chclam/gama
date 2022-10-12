@@ -592,6 +592,9 @@ class Gama(ABC):
             pop = self._final_pop
         else:
             pop = [self._operator_set.individual() for _ in range(50)]
+#            for i in pop:
+#                print(i.pipeline)
+            exit(0)
 
         deadline = time.time() + timeout
 
@@ -619,7 +622,6 @@ class Gama(ABC):
         except KeyboardInterrupt:
             log.info("Search phase terminated because of Keyboard Interrupt.")
 
-        import pdb; pdb.set_trace()
         self._final_pop = self._search_method.output
         n_evaluations = len(self._evaluation_library.evaluations)
         log.info(f"Search phase evaluated {n_evaluations} individuals.")

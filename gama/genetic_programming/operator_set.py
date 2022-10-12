@@ -87,6 +87,7 @@ class OperatorSet:
         expression = self._create_new(*args, **kwargs)
         if self._safe_compile is not None:
             compile_ = self._safe_compile
+            print(expression)
         else:
             compile_ = self._compile
         ind = Individual(expression, to_pipeline=compile_)

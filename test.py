@@ -39,7 +39,6 @@ if __name__ == "__main__":
   print("Starting `fit` which will take roughly 3 minutes.")
   automl.fit(X_train, y_train)
 
-
   label_predictions = automl.predict(X_test)
   probability_predictions = automl.predict_proba(X_test)
   
