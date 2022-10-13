@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, log_loss
 from gama.configuration.fasttextclassifier import FastTextClassifier
 from gama import GamaClassifier
 from gama.search_methods import AsynchronousSuccessiveHalving
+from sklearn.pipeline import make_pipeline 
 
 
 if __name__ == "__main__":
@@ -35,7 +36,7 @@ if __name__ == "__main__":
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-  automl = GamaClassifier(max_total_time=180, store="nothing", max_eval_time=120)
+  automl = GamaClassifier(max_total_time=600, store="logs", max_eval_time=450, scoring="accuracy")
   print("Starting `fit` which will take roughly 3 minutes.")
   automl.fit(X_train, y_train)
 

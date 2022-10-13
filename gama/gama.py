@@ -62,6 +62,7 @@ from gama.postprocessing import (
 )
 from gama.utilities.generic.async_evaluator import AsyncEvaluator
 from gama.utilities.metrics import Metric
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 # Avoid stopit from logging warnings every time a pipeline evaluation times out
 logging.getLogger("stopit").setLevel(logging.ERROR)
@@ -325,10 +326,11 @@ class Gama(ABC):
         return x
 
     def _prepare_for_prediction(self, x):
+        if any([isinstance(step, FastTextClassifier) for _, step in self.model.steps]):
+            return x
         if isinstance(x, np.ndarray):
             x = self._np_to_matching_dataframe(x)
-        x = self._basic_encoding_pipeline.transform(x)
-        return x
+        return self._basic_encoding_pipeline.transform(x)
 
     def _predict(self, x: pd.DataFrame):
         raise NotImplementedError("_predict is implemented by base classes.")
@@ -497,13 +499,13 @@ class Gama(ABC):
         with self._time_manager.start_activity(
             "preprocessing", activity_meta=["default"]
         ):
+            self.x_raw = x.copy()
             x, self._y = format_x_y(x, y)
             from gama.data_formatting import infer_categoricals_inplace
             infer_categoricals_inplace(x)
             
             self._inferred_dtypes = x.dtypes
             # save a pointer to a raw copy of X for FastTextClassifier
-            self.x_raw = x.copy()
             is_classification = hasattr(self, "_label_encoder")
             self._x, self._basic_encoding_pipeline = basic_encoding(
                 x, is_classification
@@ -595,8 +597,19 @@ class Gama(ABC):
             pop = self._final_pop
         else:
             pop = [self._operator_set.individual() for _ in range(50)]
-            for i in pop:
-                print(i.pipeline)
+
+            # make fasttextclassifier index first to ensure that FTC is evaluated
+            ft_idx = None 
+            for idx, ind in enumerate(pop):
+                if any([isinstance(step, FastTextClassifier) for step in ind.pipeline]):
+                    ft_idx = idx
+                    break
+            if ft_idx is None:
+                print("Warning: No FastTextClassifier found in the search space.")
+            else:
+                temp = pop[0] 
+                pop[0] = pop[ft_idx]
+                pop[ft_idx] = temp
 
         deadline = time.time() + timeout
 

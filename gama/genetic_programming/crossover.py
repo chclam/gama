@@ -82,8 +82,8 @@ def crossover_terminals(
     ind2: Individual
         The individual to crossover with individual1.
     """
-
-    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+    
+    if (not _has_fasttext_primitive(ind1) and _has_fasttext_primitive(ind2)) or (_has_fasttext_primitive(ind1) and not _has_fasttext_primitive(ind2)):
         return ind1, ind2
 
     options = _shared_terminals(ind1, ind2, with_indices=True, value_match="different")
@@ -92,6 +92,8 @@ def crossover_terminals(
     ind2.replace_terminal(j, ind1_term)
     return ind1, ind2
 
+def _has_fasttext_primitive(ind: Individual):
+    return any([isinstance(p, FastTextClassifier) for p in ind.primitives])  
 
 def _shared_terminals(
     ind1: Individual,

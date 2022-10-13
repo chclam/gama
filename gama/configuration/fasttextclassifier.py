@@ -20,7 +20,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
   def fit(self, X, y, classes=None):
     if not os.path.isdir("cache"):
       os.mkdir("cache")
-    data_fn = "cache/test_data.txt"
+    data_fn = f"cache/test_data{datetime.now()}.txt"
     data = self.preprocess(X, y)
       
     if self.classes_ is None:
@@ -31,6 +31,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn)
     self.model_filename = f"cache/ft_model_{datetime.now()}.bin"
     model.save_model(self.model_filename)
+    return self
 
   def predict(self, X, ret_proba=False):
     if self.model_filename is None:
@@ -43,7 +44,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     if not ret_proba:
       # flatten list and get rid of "__label__" prefix
       # TODO: conversion to int is only needed if label encoder is used.
-      return [int(x[0].replace("__label__", "")) for x in classes_pred]
+      return np.array([int(x[0].replace("__label__", "")) for x in classes_pred])
     else:
       ret = []
       for row_classes, row_probs in zip(classes_pred, probs_pred):
@@ -80,7 +81,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       y = pd.DataFrame(y).reset_index(drop=True)
     # formatting y to fit fasttext expected format
     ret = X.copy()
-    # add column name in front of each value
     ret = ret.astype(str)
     ret = ret.fillna(" ")
     if y is not None:
