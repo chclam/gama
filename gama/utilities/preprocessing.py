@@ -74,12 +74,12 @@ def basic_pipeline_extension(
     """
     # These steps need to be in the pipeline because they need to be trained each fold.
     extension_steps = []
-#    if not is_classification:
-#        # TargetEncoder is broken with categorical target
-#        many_factor_features = list(select_categorical_columns(x, min_f=11))
-#        extension_steps.append(
-#            ("target_enc", ce.TargetEncoder(cols=many_factor_features))
-#        )
-    #extension_steps.append(("imputation", SimpleImputer(strategy="median")))
+    if not is_classification:
+        # TargetEncoder is broken with categorical target
+        many_factor_features = list(select_categorical_columns(x, min_f=11))
+        extension_steps.append(
+            ("target_enc", ce.TargetEncoder(cols=many_factor_features))
+        )
+    extension_steps.append(("imputation", SimpleImputer(strategy="median")))
 
     return extension_steps

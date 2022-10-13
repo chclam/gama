@@ -19,6 +19,7 @@ from gama.utilities.generic.stopwatch import Stopwatch
 import numpy as np
 from gama.utilities.metrics import Metric
 from gama.genetic_programming.components import Individual, PrimitiveNode, Fitness
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 log = logging.getLogger(__name__)
 
@@ -71,9 +72,6 @@ def evaluate_pipeline(
         raise TypeError(f"Pipeline must not be None and requires fit, predict, steps.")
     if not timeout > 0:
         raise ValueError(f"`timeout` must be greater than 0, is {timeout}.")
-
-
-    from gama.configuration.fasttextclassifier import FastTextClassifier
 
     # check if fasttextclassifier is in the pipeline
     if any([isinstance(step[1], FastTextClassifier) for step in pipeline.steps]):

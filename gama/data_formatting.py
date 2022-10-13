@@ -10,6 +10,8 @@ from gama.utilities.preprocessing import log
 def series_looks_categorical(series) -> bool:
     if series.dtype == "object":
         return True
+    if series.dtype == "bool":
+        return False
     if is_numeric_dtype(series):
         value_counts = series.value_counts()
         integer_like = series.dtype.kind == "i" or all(

@@ -21,6 +21,7 @@ def mut_replace_terminal(individual: Individual, primitive_set: dict) -> None:
     primitive_set: dict
     """
 
+    print("heeeeeeeeeeeeeey")
     def terminal_replaceable(index_terminal):
         _, terminal = index_terminal
         return len(primitive_set[terminal.identifier]) > 1
@@ -46,6 +47,7 @@ def mut_replace_primitive(individual: Individual, primitive_set: dict) -> None:
     primitive_set: dict
     """
 
+    print("heeeeeeeeeeeeeey")
     def primitive_replaceable(index_primitive):
         _, primitive = index_primitive
         return len(primitive_set[primitive._primitive.output]) > 1
@@ -81,6 +83,7 @@ def mut_shrink(
         Must be at least one greater than the number of primitives in `individual`.
         If None, a random number of primitives is removed.
     """
+    print("heeeeeeeeeeeeeey")
     n_primitives = len(list(individual.primitives))
     if shrink_by is not None and n_primitives <= shrink_by:
         raise ValueError(f"Can't shrink size {n_primitives} individual by {shrink_by}.")
@@ -106,6 +109,7 @@ def mut_insert(individual: Individual, primitive_set: dict) -> None:
         Individual to mutate in-place.
     primitive_set: dict
     """
+    print("heeeeeeeeeeeeeey")
     parent_node = random.choice(list(individual.primitives))
     new_primitive_node = random_primitive_node(
         output_type=DATA_TERMINAL, primitive_set=primitive_set
@@ -141,6 +145,7 @@ def random_valid_mutation_in_place(
     Callable
         The mutation function used.
     """
+    print("heeeeeeeeeeeeeey")
     n_primitives = len(list(individual.primitives))
     available_mutations: List[Callable[[Individual, Dict], None]] = []
     if max_length is not None and n_primitives > max_length:

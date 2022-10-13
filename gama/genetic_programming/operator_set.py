@@ -1,6 +1,8 @@
 import logging
 
 from .components import Individual
+from gama.configuration.fasttextclassifier import FastTextClassifier
+from gama.genetic_programming.compilers.scikitlearn import compile_individual
 
 log = logging.getLogger(__name__)
 
@@ -85,11 +87,14 @@ class OperatorSet:
 
     def individual(self, *args, **kwargs):
         expression = self._create_new(*args, **kwargs)
-        if self._safe_compile is not None:
-            compile_ = self._safe_compile
-            print(expression)
+        if getattr(expression._primitive, "identifier") is FastTextClassifier: 
+            compile_ = compile_individual # provide a compile function without arguments
         else:
-            compile_ = self._compile
+            if self._safe_compile is not None:
+                compile_ = self._safe_compile
+            else:
+                compile_ = self._compile
+
         ind = Individual(expression, to_pipeline=compile_)
         ind.meta["origin"] = "new"
         return ind

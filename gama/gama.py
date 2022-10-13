@@ -498,6 +498,9 @@ class Gama(ABC):
             "preprocessing", activity_meta=["default"]
         ):
             x, self._y = format_x_y(x, y)
+            from gama.data_formatting import infer_categoricals_inplace
+            infer_categoricals_inplace(x)
+            
             self._inferred_dtypes = x.dtypes
             # save a pointer to a raw copy of X for FastTextClassifier
             self.x_raw = x.copy()
@@ -592,9 +595,8 @@ class Gama(ABC):
             pop = self._final_pop
         else:
             pop = [self._operator_set.individual() for _ in range(50)]
-#            for i in pop:
-#                print(i.pipeline)
-            exit(0)
+            for i in pop:
+                print(i.pipeline)
 
         deadline = time.time() + timeout
 

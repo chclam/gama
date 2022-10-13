@@ -11,6 +11,7 @@ from gama.utilities.export import (
     format_import,
     format_pipeline,
 )
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 
 class BestFitPostProcessing(BasePostProcessing):
@@ -24,8 +25,9 @@ class BestFitPostProcessing(BasePostProcessing):
         self, x: pd.DataFrame, y: pd.Series, timeout: float, selection: List[Individual], x_raw=None
     ) -> object:
         self._selected_individual = selection[0]
-        return self._selected_individual.pipeline.fit(x_raw, y)
-        #return self._selected_individual.pipeline.fit(x, y)
+        if any([isinstance(p, FastTextClassifier) for p in self._selected_individual.pipeline]):
+            x = x_raw
+        return self._selected_individual.pipeline.fit(x, y)
 
     def to_code(
         self, preprocessing: Sequence[Tuple[str, TransformerMixin]] = None
