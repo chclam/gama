@@ -447,17 +447,13 @@ class EnsembleClassifier(Ensemble):
         if prediction_to_validate is None:
             prediction_to_validate = self._averaged_validation_predictions()
 
-        print(1)
         if self._metric.requires_probabilities:
-            print("if")
             return self._metric.maximizable_score(self._y, prediction_to_validate)
         else:
-            print("else")
             # argmax returns (N, 1) matrix, need to squeeze it to (N,) for scoring.
             class_predictions = self._one_hot_encoder.inverse_transform(
                 prediction_to_validate.toarray()
             )
-            print(2)
             return self._metric.maximizable_score(self._y, class_predictions)
 
     def predict(self, X, X_raw):

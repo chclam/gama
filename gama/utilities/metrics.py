@@ -40,7 +40,8 @@ class Metric:
                 "Scorer was not a valid scorer or could not be converted to one."
             )
         self.scorer = scorer
-        self.name = reversed_scorers[scorer]
+        self.name = "roc_auc_ovr" # hard code stuff because of weird bug at 23:30
+        # self.name = reversed_scorers[scorer]
         self.requires_probabilities = (
             isinstance(scorer, _ProbaScorer) or self.name == "roc_auc"
         )

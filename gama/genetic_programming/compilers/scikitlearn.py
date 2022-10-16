@@ -109,15 +109,18 @@ def evaluate_pipeline(
                     new_splits.append((subsample_idx, test))
                 splitter = new_splits
 
-            result = cross_validate(
-                pipeline,
-                x,
-                y_train,
-                cv=splitter,
-                return_estimator=True,
-                scoring=dict([(m.name, m) for m in metrics]),
-                error_score="raise",
-            )
+            try:
+                result = cross_validate(
+                    pipeline,
+                    x,
+                    y_train,
+                    cv=splitter,
+                    return_estimator=True,
+                    scoring=dict([(m.name, m) for m in metrics]),
+                    error_score="raise",
+                )
+            except Exception as e:
+                print(e)
             scores = tuple([np.mean(result[f"test_{m.name}"]) for m in metrics])
             estimators = result["estimator"]
 

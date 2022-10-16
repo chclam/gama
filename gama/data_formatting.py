@@ -14,9 +14,8 @@ def series_looks_categorical(series) -> bool:
         return False
     if is_numeric_dtype(series):
         value_counts = series.value_counts()
-        integer_like = series.dtype.kind == "i" or all(
-            x.is_integer() for x in series.dropna()
-        )
+        integer_like = series.dtype.kind in ["i", "u"] or (series.dtype.kind == "f" and all(
+            x.is_integer() for x in series.dropna()))
         return len(value_counts) <= 10 and integer_like
     return False
 

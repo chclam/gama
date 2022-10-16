@@ -24,7 +24,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
 
     if self.classes_ is None:
       self.classes_ = sorted(list(pd.Series(y).unique()))
-      
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     data = self.preprocess(X, y, data_fn=data_fn)
 #    with open(data_fn, "w+") as out:
@@ -67,18 +66,18 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
 
   def preprocess(self, X, y=None, del_spec_chars=True, data_fn=f"cache/test_data{time()}.txt") -> str:
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
-    if y is not None:
-      y = pd.DataFrame(y).reset_index(drop=True)
     # formatting y to fit fasttext expected format
     data = X.copy()
     data = data.astype(str)
     data = data.fillna(" ")
     if y is not None:
-      # Sloppy hack for appending "__label__" faster to all values  
+      y.name = None
+      y = pd.DataFrame(y, columns=[0]).reset_index(drop=True)
       y[1] = y[0]
       y[0] = "__label__"
       y = y.astype(str).apply(lambda r: "".join(v for v in r.values), axis=1)
       data = pd.concat([data, y], axis=1)
+      # Sloppy hack for appending "__label__" faster to all values  
     '''
     TODO: write a bash script to make this faster
     '''
