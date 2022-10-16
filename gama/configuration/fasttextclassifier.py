@@ -27,9 +27,10 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       self.classes_ = sorted(list(pd.Series(y).unique()))
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     with open(data_fn, "w+") as out:
-      out.write(data.to_string(index=False))
+      out.write(data.to_string(index=False, header=False))
     model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn)
     self.model_filename = f"cache/ft_model_{datetime.now()}.bin"
+    # save and load the model due to issues with multiprocessing when passing on the fit model.
     model.save_model(self.model_filename)
     return self
 
@@ -63,18 +64,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     y_pred = self.predict(X)
     return accuracy_score(y_true, y_pred)
 
-  def validate(self, X, y):
-    # refactor
-    if self.model_filename is None:
-      raise Exception("Model is not trained. Please train the model using 'fit' before validating the model.")
-    data = self.preprocess(X, y)
-    val_data_name = f"cache/validation_set_{datetime.now()}"
-    with open(val_data_name, 'w') as out:
-      out.write(data.to_string(index=False))
-    model = fasttext.load_model(self.model_filename)
-    # get rid of this
-    print(model.test(val_data_name, k=5))
-
   def preprocess(self, X, y=None, del_spec_chars=True):
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
     if y is not None:
@@ -89,6 +78,12 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       y[0] = "__label__"
       y = y.astype(str).apply(lambda r: "".join(v for v in r.values), axis=1)
       ret = pd.concat([ret, y], axis=1)
+    '''
+    TODO: write a bash script to make this faster
+    '''
+#    with open("preprocessing_X.txt", "w") as out:
+#      out.write(ret.to_string(header=False, index=False))
+    
     # join all columns into one column
     ret = ret.apply(lambda r: " ".join(v for v in r.values), axis=1)
     ret = ret.str.lower()
@@ -99,6 +94,3 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       ret = ret.str.replace("\\s", " ", regex=True)
       ret = ret.str.replace("[ ]+", " ", regex=True)
     return ret
-
-  def set_classes(self, classes):
-    self.classes_ = sorted(list(classes))

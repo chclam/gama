@@ -19,6 +19,7 @@ from gama.utilities.export import (
     transformers_to_str,
 )
 from gama.utilities.metrics import Metric, MetricType
+from gama.configuration.fasttextclassifier import FastTextClassifier
 
 
 if TYPE_CHECKING:
@@ -69,7 +70,7 @@ class EnsemblePostProcessing(BasePostProcessing):
         )
 
     def post_process(
-        self, x: pd.DataFrame, y: pd.Series, timeout: float, selection: List[Individual]
+        self, x: pd.DataFrame, y: pd.Series, timeout: float, selection: List[Individual], x_raw=None
     ) -> object:
         self._ensemble = build_fit_ensemble(
             x,
@@ -354,10 +355,13 @@ class Ensemble(object):
         # if not c_mgr:
         #     log.info("Fitting of ensemble stopped early.")
 
-    def _get_weighted_mean_predictions(self, X, predict_method="predict"):
+    def _get_weighted_mean_predictions(self, X, predict_method="predict", X_raw=None):
         weighted_predictions = []
         for (model, weight) in self._fit_models:
-            target_prediction = getattr(model, predict_method)(X)
+            if any([isinstance(step, FastTextClassifier) for step in model]):
+                target_prediction = getattr(model, predict_method)(X_raw)
+            else:
+                target_prediction = getattr(model, predict_method)(X)
             if self._prediction_transformation:
                 target_prediction = self._prediction_transformation(target_prediction)
             weighted_predictions.append(target_prediction * weight)
@@ -443,27 +447,31 @@ class EnsembleClassifier(Ensemble):
         if prediction_to_validate is None:
             prediction_to_validate = self._averaged_validation_predictions()
 
+        print(1)
         if self._metric.requires_probabilities:
+            print("if")
             return self._metric.maximizable_score(self._y, prediction_to_validate)
         else:
+            print("else")
             # argmax returns (N, 1) matrix, need to squeeze it to (N,) for scoring.
             class_predictions = self._one_hot_encoder.inverse_transform(
                 prediction_to_validate.toarray()
             )
+            print(2)
             return self._metric.maximizable_score(self._y, class_predictions)
 
-    def predict(self, X):
+    def predict(self, X, X_raw):
         if self._metric.requires_probabilities:
             log.warning(
                 "Ensemble was tuned with a class-probabilities metric. "
                 "Using argmax of probabilities, which may not give optimal predictions."
             )
             class_probabilities = self._get_weighted_mean_predictions(
-                X, "predict_proba"
+                X, "predict_proba", X_raw
             )
         else:
             class_probabilities = self._get_weighted_mean_predictions(
-                X, "predict"
+                X, "predict", X_raw
             ).toarray()
 
         class_predictions = self._one_hot_encoder.inverse_transform(class_probabilities)
@@ -472,15 +480,15 @@ class EnsembleClassifier(Ensemble):
 
         return class_predictions.ravel()
 
-    def predict_proba(self, X):
+    def predict_proba(self, X, X_raw):
         if self._metric.requires_probabilities:
-            return self._get_weighted_mean_predictions(X, "predict_proba")
+            return self._get_weighted_mean_predictions(X, "predict_proba", X_raw)
         else:
             log.warning(
                 "Ensemble was tuned with a class label predictions metric, "
                 "not probabilities. Using weighted mean of class predictions."
             )
-            return self._get_weighted_mean_predictions(X, "predict").toarray()
+            return self._get_weighted_mean_predictions(X, "predict", X_raw).toarray()
 
 
 class EnsembleRegressor(Ensemble):
@@ -489,8 +497,8 @@ class EnsembleRegressor(Ensemble):
             prediction_to_validate = self._averaged_validation_predictions()
         return self._metric.maximizable_score(self._y, prediction_to_validate)
 
-    def predict(self, X):
-        return self._get_weighted_mean_predictions(X)
+    def predict(self, X, X_raw):
+        return self._get_weighted_mean_predictions(X, X_raw)
 
 
 def build_fit_ensemble(
@@ -505,6 +513,7 @@ def build_fit_ensemble(
     """ Construct an Ensemble of models, optimizing for metric. """
     start_build = time.time()
 
+    print("build_fit_ensemble")
     log.debug("Building ensemble.")
     if metric.task_type == MetricType.REGRESSION:
         ensemble = EnsembleRegressor(metric, y, evaluation_library)  # type: Ensemble

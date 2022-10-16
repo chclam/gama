@@ -10,6 +10,9 @@ from .gama import Gama
 from gama.data_loading import X_y_from_file
 from gama.configuration.classification import clf_config
 from gama.utilities.metrics import scoring_to_metric
+from gama.configuration.fasttextclassifier import FastTextClassifier
+from gama.postprocessing.ensemble import Ensemble
+
 
 
 class GamaClassifier(Gama):
@@ -37,7 +40,7 @@ class GamaClassifier(Gama):
         self._label_encoder = None
         super().__init__(*args, **kwargs, config=config, scoring=scoring)
 
-    def _predict(self, x: pd.DataFrame):
+    def _predict(self, x: pd.DataFrame, x_raw=None):
         """ Predict the target for input X.
 
         Parameters
@@ -50,13 +53,18 @@ class GamaClassifier(Gama):
         numpy.ndarray
             Array with predictions of shape (N,) where N is len(X).
         """
-        y = self.model.predict(x)  # type: ignore
+        if isinstance(self.model, FastTextClassifier):
+            y = self.model.predict(x_raw)  
+        elif isinstance(self.model, Ensemble):
+            y = self.model.predict(x, x_raw)  
+        else:
+            y = self.model.predict(x)  # type: ignore
         # Decode the predicted labels - necessary only if ensemble is not used.
         if y[0] not in self._label_encoder.classes_:
             y = self._label_encoder.inverse_transform(y)
         return y
 
-    def _predict_proba(self, x: pd.DataFrame):
+    def _predict_proba(self, x: pd.DataFrame, x_raw=None):
         """ Predict the class probabilities for input x.
 
         Predict target for x, using the best found pipeline(s) during the `fit` call.
@@ -72,7 +80,7 @@ class GamaClassifier(Gama):
             Array of shape (N, K) with class probabilities where N is len(x),
              and K is the number of class labels found in `y` of `fit`.
         """
-        return self.model.predict_proba(x)  # type: ignore
+        return self.model.predict_proba(x, x_raw)  # type: ignore
 
     def predict_proba(self, x: Union[pd.DataFrame, np.ndarray]):
         """ Predict the class probabilities for input x.
@@ -90,8 +98,9 @@ class GamaClassifier(Gama):
             Array of shape (N, K) with class probabilities where N is len(x),
              and K is the number of class labels found in `y` of `fit`.
         """
+        x_raw = x.copy()
         x = self._prepare_for_prediction(x)
-        return self._predict_proba(x)
+        return self._predict_proba(x, x_raw)
 
     def predict_proba_from_file(
         self,

@@ -326,8 +326,8 @@ class Gama(ABC):
         return x
 
     def _prepare_for_prediction(self, x):
-        if any([isinstance(step, FastTextClassifier) for _, step in self.model.steps]):
-            return x
+#        if hasattr(self.model, "steps") and any([isinstance(step, FastTextClassifier) for _, step in self.model.steps]):
+#            return x
         if isinstance(x, np.ndarray):
             x = self._np_to_matching_dataframe(x)
         return self._basic_encoding_pipeline.transform(x)
@@ -348,8 +348,9 @@ class Gama(ABC):
         numpy.ndarray
             array with predictions of shape (N,) where N is len(x)
         """
+        x_raw = x.copy()
         x = self._prepare_for_prediction(x)
-        return self._predict(x)
+        return self._predict(x, x_raw)
 
     def predict_from_file(
         self,
@@ -580,6 +581,7 @@ class Gama(ABC):
                 best_individuals,
                 self.x_raw
             )
+            import pdb; pdb.set_trace()
         if not self._store == "all":
             to_clean = dict(nothing="all", logs="evaluations", models="logs")
             self.cleanup(to_clean[self._store])
@@ -596,9 +598,10 @@ class Gama(ABC):
         elif warm_start is None and len(self._final_pop) > 0:
             pop = self._final_pop
         else:
+            # TODO: simply populate pop[0] with FastText individual
             pop = [self._operator_set.individual() for _ in range(50)]
 
-            # make fasttextclassifier index first to ensure that FTC is evaluated
+            # make fasttextclassifier index first to ensure that fasttext is evaluated
             ft_idx = None 
             for idx, ind in enumerate(pop):
                 if any([isinstance(step, FastTextClassifier) for step in ind.pipeline]):
