@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.datasets import load_breast_cancer
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, log_loss
+from sklearn.metrics import accuracy_score, log_loss, roc_auc_score
 from gama.configuration.fasttextclassifier import FastTextClassifier
 from gama import GamaClassifier
 from gama.search_methods import AsynchronousSuccessiveHalving
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-  automl = GamaClassifier(max_total_time=600, store="logs", max_eval_time=450, scoring="accuracy", post_processing=EnsemblePostProcessing())
+  automl = GamaClassifier(max_total_time=600, store="logs", max_eval_time=450, scoring="roc_auc_ovr", post_processing=EnsemblePostProcessing())
   #automl = GamaClassifier(max_total_time=600, store="logs", max_eval_time=450, scoring="accuracy")
   print("Starting `fit` which will take roughly 3 minutes.")
   automl.fit(X_train, y_train)
@@ -46,6 +46,7 @@ if __name__ == "__main__":
   probability_predictions = automl.predict_proba(X_test)
   
   print('accuracy:', accuracy_score(y_test, label_predictions))
+  print('roc_auc:', roc_auc_score(y_test, probability_predictions, average="macro", multi_class="ovr"))
   print('log loss:', log_loss(y_test, probability_predictions))
   # the `score` function outputs the score on the metric optimized towards (by default, `log_loss`)
   print('log_loss', automl.score(X_test, y_test))

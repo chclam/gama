@@ -4,7 +4,7 @@ from typing import Iterable, Tuple, Union
 from sklearn.metrics import get_scorer
 from sklearn.metrics._scorer import _ProbaScorer, _BaseScorer, SCORERS
 
-classification_metrics = {"accuracy", "roc_auc", "average_precision", "neg_log_loss"}
+classification_metrics = {"accuracy", "roc_auc", "average_precision", "neg_log_loss", "roc_auc_ovr"}
 for metric in ["precision", "recall", "f1"]:
     for average in ["macro", "micro", "samples", "weighted"]:
         classification_metrics.add(f"{metric}_{average}")

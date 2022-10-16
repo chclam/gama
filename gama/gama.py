@@ -581,7 +581,6 @@ class Gama(ABC):
                 best_individuals,
                 self.x_raw
             )
-            import pdb; pdb.set_trace()
         if not self._store == "all":
             to_clean = dict(nothing="all", logs="evaluations", models="logs")
             self.cleanup(to_clean[self._store])
