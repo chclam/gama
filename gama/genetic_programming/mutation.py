@@ -106,7 +106,6 @@ def mut_insert(individual: Individual, primitive_set: dict) -> None:
         Individual to mutate in-place.
     primitive_set: dict
     """
-    print("heeeeeeeeeeeeeey")
     parent_node = random.choice(list(individual.primitives))
     new_primitive_node = random_primitive_node(
         output_type=DATA_TERMINAL, primitive_set=primitive_set

@@ -33,7 +33,8 @@ def random_crossover(
     if max_length is not None and len(ind2.primitives) > max_length:
         raise ValueError(f"`individual2` ({ind2}) exceeds `max_length` ({max_length}).")
 
-    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+    #if ind1.primitives is None or ind2.primitives is None:
+    if any([isinstance(p, FastTextClassifier) for p in (ind1.primitives + ind2.primitives)]):
         return ind1, ind2
 
     crossover_choices = _valid_crossover_functions(ind1, ind2)
@@ -58,8 +59,7 @@ def crossover_primitives(
     ind2: Individual
         The individual to crossover with individual1.
     """
-
-    if any([isinstance(p, FastTextClassifier) for p in ind1.primitives.extend(ind2.primitives)]):
+    if any([isinstance(p, FastTextClassifier) for p in (ind1.primitives + ind2.primitives)]):
         return ind1, ind2
 
     p1_node = random.choice(list(ind1.primitives)[:-1])
@@ -82,7 +82,6 @@ def crossover_terminals(
     ind2: Individual
         The individual to crossover with individual1.
     """
-    
     if (not _has_fasttext_primitive(ind1) and _has_fasttext_primitive(ind2)) or (_has_fasttext_primitive(ind1) and not _has_fasttext_primitive(ind2)):
         return ind1, ind2
 
