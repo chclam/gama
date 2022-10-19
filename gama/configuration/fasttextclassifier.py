@@ -7,7 +7,7 @@ from sklearn.base import ClassifierMixin, BaseEstimator
 from time import time
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0):
+  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors=""):
     self._estimator_type = "classifier"
     self.classes_ = None
     self.model_filename = None
@@ -16,6 +16,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.wordNgrams = wordNgrams
     self.minn = minn
     self.maxn = maxn
+    self.pretrainedVectors=pretrainedVectors
     
   def fit(self, X, y, classes=None):
     '''
@@ -31,7 +32,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     data = self.preprocess(X, y, data_fn=data_fn)
 #    with open(data_fn, "w+") as out:
 #      out.write(data.to_string(index=False, header=False))
-    model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn)
+    model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors)
     self.model_filename = f"cache/ft_model_{time()}.bin"
     # save and load the model due to issues with multiprocessing when passing on the fit model.
     model.save_model(self.model_filename)
@@ -93,3 +94,4 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     if ret[-1] == "\n" and len(ret) > 0:
       ret = ret[:(len(ret) - 1)] # remove trailing newline
     return ret 
+
