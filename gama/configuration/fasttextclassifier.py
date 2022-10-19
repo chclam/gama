@@ -18,12 +18,15 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.maxn = maxn
     
   def fit(self, X, y, classes=None):
+    '''
+    TODO: Label encode y
+    '''
     if not os.path.isdir("cache"):
       os.mkdir("cache")
     data_fn = f"cache/test_data{time()}.txt"
 
     if self.classes_ is None:
-      self.classes_ = sorted(list(pd.Series(y).unique()))
+      self.classes_ = sorted(np.unique(y))
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     data = self.preprocess(X, y, data_fn=data_fn)
 #    with open(data_fn, "w+") as out:
@@ -66,13 +69,13 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
 
   def preprocess(self, X, y=None, del_spec_chars=True, data_fn=f"cache/test_data{time()}.txt") -> str:
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
-    # formatting y to fit fasttext expected format
     data = X.copy()
     data = data.astype(str)
     data = data.fillna(" ")
     if y is not None:
-      y.name = None
+      # formatting y to fit fasttext expected format
       y = pd.DataFrame(y, columns=[0]).reset_index(drop=True)
+      y.name = None
       y[1] = y[0]
       y[0] = "__label__"
       y = y.astype(str).apply(lambda r: "".join(v for v in r.values), axis=1)
