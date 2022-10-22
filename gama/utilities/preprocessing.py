@@ -4,10 +4,11 @@ import category_encoders as ce
 import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import ColumnTransformer
+from dirty_cat import MinHashEncoder, GapEncoder
 
 log = logging.getLogger(__name__)
-
 
 def select_categorical_columns(
     df: pd.DataFrame,
@@ -45,21 +46,21 @@ def select_categorical_columns(
 def basic_encoding(x: pd.DataFrame, is_classification: bool):
     """ Perform 'basic' encoding of categorical features.
 
-     Specifically, perform:
-      - Ordinal encoding for features with 2 or fewer unique values.
-      - One hot encoding for features with at most 10 unique values.
-      - Ordinal encoding for features with 11+ unique values, if y is categorical.
-     """
-    ord_features = list(select_categorical_columns(x, max_f=2))
-    if is_classification:
-        ord_features.extend(select_categorical_columns(x, min_f=11))
-    leq_10_features = list(select_categorical_columns(x, min_f=3, max_f=10))
+    Specifically, perform:
+     - One hot encoding for features with at most 30 unique values.
+     - Min-hash encoding for features with 30+ unique values.
+    """
+    oh_features = list(select_categorical_columns(x, max_f=30))
+    mh_features = list(select_categorical_columns(x, min_f=31))
 
-    encoding_steps = [
-        ("ord-enc", ce.OrdinalEncoder(cols=ord_features, drop_invariant=True)),
-        ("oh-enc", ce.OneHotEncoder(cols=leq_10_features, handle_missing="value")),
-    ]
-    encoding_pipeline = Pipeline(encoding_steps)
+    ct = ColumnTransformer([
+            ("oh-enc", ce.OneHotEncoder(handle_missing="value"), oh_features),
+            ("mh-enc", ce.OrdinalEncoder(drop_invariant=True), mh_features),
+        ],
+        remainder="passthrough"
+    )
+
+    encoding_pipeline = make_pipeline(ct)
     x_enc = encoding_pipeline.fit_transform(x, y=None)  # Is this dangerous?
     return x_enc, encoding_pipeline
 
