@@ -21,14 +21,14 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.dim = dim
     
   def fit(self, X, y, classes=None):
-    '''
-    TODO: Label encode y
-    '''
     if not os.path.isdir("cache"):
       os.mkdir("cache")
     data_fn = f"cache/test_data{time()}.txt"
 
     if self.classes_ is None:
+      """
+      TODO: do the labels properly
+      """
       self.classes_ = sorted(np.unique(y))
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     data = self.preprocess(X, y, data_fn=data_fn)

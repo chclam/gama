@@ -4,9 +4,9 @@ import category_encoders as ce
 import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.compose import ColumnTransformer
-from dirty_cat import MinHashEncoder, GapEncoder
+from dirty_cat import MinHashEncoder, GapEncoder, SimilarityEncoder
 
 log = logging.getLogger(__name__)
 
@@ -47,23 +47,21 @@ def basic_encoding(x: pd.DataFrame, is_classification: bool):
     """ Perform 'basic' encoding of categorical features.
 
     Specifically, perform:
-     - One hot encoding for features with at most 30 unique values.
-     - Min-hash encoding for features with 30+ unique values.
+     - Similarity encoding for features with at most 10 unique values.
+     - Min-hash encoding for features with 10+ unique values.
     """
-    oh_features = list(select_categorical_columns(x, max_f=30))
-    mh_features = list(select_categorical_columns(x, min_f=31))
+    low_features = list(select_categorical_columns(x, max_f=10))
+    high_features = list(select_categorical_columns(x, min_f=11))
 
     ct = ColumnTransformer([
-            ("oh-enc", ce.OneHotEncoder(handle_missing="value"), oh_features),
-            ("mh-enc", ce.OrdinalEncoder(drop_invariant=True), mh_features),
+            ("sim-enc", SimilarityEncoder(handle_missing="value"), low_features),
+            ("mh-enc", MinHashEncoder(drop_invariant=True), high_features),
         ],
         remainder="passthrough"
     )
-
     encoding_pipeline = make_pipeline(ct)
-    x_enc = encoding_pipeline.fit_transform(x, y=None)  # Is this dangerous?
+    x_enc = pd.DataFrame(encoding_pipeline.fit_transform(x, y=None), index=x.index)  # Is this dangerous?
     return x_enc, encoding_pipeline
-
 
 def basic_pipeline_extension(
     x: pd.DataFrame, is_classification: bool

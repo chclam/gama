@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from typing import Callable, Tuple, Optional, Sequence
+import pandas as pd
 
 import stopit
 from sklearn.base import TransformerMixin, is_classifier
@@ -82,6 +83,11 @@ def evaluate_pipeline(
     scores = tuple([float("-inf")] * len(metrics))
     is_classification = is_classifier(pipeline)
 
+    if isinstance(x, pd.DataFrame):
+        x = x.reset_index(drop=True)
+    if isinstance(y_train, pd.Series):
+        y_train = y_train.reset_index(drop=True)
+
     with stopit.ThreadingTimeout(timeout) as c_mgr:
         try:
             # When splits are generated (i.e., cv is an int), they are deterministic
@@ -104,23 +110,22 @@ def evaluate_pipeline(
                         sampler = ShuffleSplit(
                             n_splits=1, train_size=subsample, random_state=0
                         )
-                    full_train_x, full_train_y = x.iloc[train, :], y_train[train]
+
+                    full_train_x = x.iloc[train, :]
+                    full_train_y = y_train[train]
                     subsample_idx, _ = next(sampler.split(full_train_x, full_train_y))
                     new_splits.append((subsample_idx, test))
                 splitter = new_splits
 
-            try:
-                result = cross_validate(
-                    pipeline,
-                    x,
-                    y_train,
-                    cv=splitter,
-                    return_estimator=True,
-                    scoring=dict([(m.name, m) for m in metrics]),
-                    error_score="raise",
-                )
-            except Exception as e:
-                print(e)
+            result = cross_validate(
+                pipeline,
+                x,
+                y_train,
+                cv=splitter,
+                return_estimator=True,
+                scoring=dict([(m.name, m) for m in metrics]),
+                error_score="raise",
+            )
             scores = tuple([np.mean(result[f"test_{m.name}"]) for m in metrics])
             estimators = result["estimator"]
 
@@ -149,6 +154,8 @@ def evaluate_pipeline(
         except KeyboardInterrupt:
             raise
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return prediction, scores, estimators, e
 
     if c_mgr.state == c_mgr.INTERRUPTED:

@@ -146,7 +146,7 @@ class GamaClassifier(Gama):
         # data sets during pipeline evaluation.
         for m in self._metrics:
             if "labels" in inspect.signature(m.scorer._score_func).parameters:
-                m.scorer._kwargs.update({"labels": sorted(pd.Series(y).unique())})
+                m.scorer._kwargs.update({"labels": np.unique(y)})
 
         super().fit(x, y, *args, **kwargs)
 
