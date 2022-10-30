@@ -5,10 +5,9 @@ import numpy as np
 import pandas as pd
 import openml
 import json
-import traceback
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, cross_validate
 from sklearn.datasets import load_breast_cancer
 from sklearn.preprocessing import LabelEncoder
 from gama.configuration.fasttextclassifier import FastTextClassifier
@@ -19,6 +18,7 @@ from gama.postprocessing.ensemble import EnsemblePostProcessing
 from sklearn.metrics import roc_auc_score
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.metrics import accuracy_score
+from sklearn.dummy import DummyClassifier
 
 
 def fasttext_run(X, y, pretrainedVectors="", dim=100):
@@ -30,25 +30,39 @@ def fasttext_run(X, y, pretrainedVectors="", dim=100):
   else:
     y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
 
-  X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
+  clf = FastTextClassifier(minn=0, maxn=0, epoch=10, lr=0.1, pretrainedVectors=pretrainedVectors, dim=dim)
 
-  clf = FastTextClassifier(minn=0, maxn=0, epoch=5, lr=0.1, pretrainedVectors=pretrainedVectors, dim=dim)
-  score = cross_val_score(clf, X_train, y_train, 
-                          cv=5,
-                          scoring=make_scorer(roc_auc_score, needs_proba=True, multi_class="ovr", average="macro", labels=sorted(y.unique())),
-                          n_jobs=2 if pretrainedVectors == "" else 1
-                          )
-  print("CV AUC scores:", score)
-  avg_score = sum(score) / len(score)
-  print("average CV AUC score:", avg_score)
-  #return avg_score
+  if len(np.unique(y)) < 2:
+    raise ValueError("y_true has fewer than 2 unique values.")
+  if len(np.unique(y)) == 2:
+    scorer = "roc_auc"
+  else:
+    scorer = "neg_log_loss"
+
+  scores = cross_val_score(clf,
+    X,
+    y, 
+    cv=10,
+    scoring=scorer, 
+    n_jobs=3 if pretrainedVectors == "" else 1
+  )
+  
+  # fill the nannies 
+  if any(np.isnan(scores)):
+    dum_score = cross_val_score(DummyClassifier(), X, y, cv=10, scoring=scorer)
+    scores = np.nan_to_num(scores, nan=np.nanmean(dum_score))
+
+  print(f"{scorer}:", scores)
+  if os.path.isdir("cache/"):
+    os.system("rm -rf cache/")
+  return list(scores)
 
 def log_error(e):
   with open("script_error.txt", "a+") as out:
-    out.write(e)
+    out.write(str(e))
+  print(e)
 
 def main(ids):
-  scores = []
   for ds_name, d_id in ids.items():
       
     dataset_scores = {
@@ -68,29 +82,33 @@ def main(ids):
 
       # Cap to 100.000 instances
       if len(X) > 100000:
-        X, _, y, _ = train_test_split(X, y, stratify=y, train_size=100000, test_size=20000, random_state=0, shuffle=True)
+        X, _, y, _ = train_test_split(X, y, stratify=y, train_size=100000, random_state=0, shuffle=True)
+
+      dataset_scores["metric"] = "roc_auc" if len(np.unique(y)) == 2 else "neg_log_loss"
 
     except Exception as e:
       print(f"{d_id} openml failed: {e}\n")
-      log_error(traceback.print_tb())
+      log_error(e)
 
     try:
-      dataset_scores["fasttext"] = fasttext_run(X, y, epoch=10)
-      dataset_scores["fasttext_100"] = fasttext_run(X, y, "100.vec", dim=100, epoch=10)
-      dataset_scores["fasttext_300"] = fasttext_run(X, y, "300.vec", dim=300, epoch=10)
+      dataset_scores["fasttext"] = fasttext_run(X, y)
     except Exception as e:
       print(f"{d_id} fasttext failed: {e}\n")
-      log_error(traceback.print_tb())
+      log_error(e)
 
-    scores.append(dataset_scores)
+    try:
+      dataset_scores["fasttext_100"] = fasttext_run(X, y, "100.vec", dim=100)
+    except Exception as e:
+      print(f"{d_id} fasttext failed: {e}\n")
+      log_error(e)
 
-  try:
-    if not os.path.isdir("roc_results"):
-      os.mkdir("roc_results")
-    with open(f"roc_results/results_{int(time.time())}.json", "w+") as f:
-      json.dump(scores, f)
-  except Exception as e:
-    print(e)
+    try:
+      if not os.path.isdir("roc_log_results"):
+        os.mkdir("roc_log_results")
+      with open(f"roc_log_results/results_{d_id}_{int(time.time())}.json", "w+") as f:
+        json.dump(dataset_scores, f)
+    except Exception as e:
+      print(e)
 
 if __name__ == "__main__":
   # Getting the data set
