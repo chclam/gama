@@ -96,16 +96,16 @@ def main(ids):
       log_score(dataset_scores)
       continue
 
-    cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True)
+    cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True).split(X, y)
 
     try:
-      dataset_scores["fasttext"] = fasttext_run(X, y, cv=cv.split(X, y))
+      dataset_scores["fasttext"] = fasttext_run(X, y, cv=cv)
     except Exception as e:
       print(f"{d_id} fasttext failed: {e}\n")
       log_error(e)
 
     try:
-      dataset_scores["fasttext_100"] = fasttext_run(X, y, cv=cv.split(X, y), pretrainedVectors="100.vec", dim=100)
+      dataset_scores["fasttext_100"] = fasttext_run(X, y, cv=cv, pretrainedVectors="100.vec", dim=100)
     except Exception as e:
       print(f"{d_id} fasttext PT failed: {e}\n")
       log_error(e)
