@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.base import ClassifierMixin, BaseEstimator
 from time import time
 from sklearn.exceptions import NotFittedError
+from random import random
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
   def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100):
@@ -33,7 +34,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     data = self.preprocess(X, y, data_fn=data_fn)
     model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
-    self.model_filename = f"cache/ft_model_{time()}.bin"
+    self.model_filename = f"cache/ft_model_{time()}{random()}.bin"
     # save and load the model due to issues with multiprocessing when passing on the fit model.
     model.save_model(self.model_filename)
     return self

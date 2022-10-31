@@ -60,55 +60,53 @@ def log_error(e):
   print(e)
 
 def log_score(dataset_scores):
-  if not os.path.isdir(f"roc_log_results"):
-    os.mkdir("roc_log_results")
-  with open(f"roc_log_results/results_{dataset_scores['data_id']}_{int(time.time())}.json", "w+") as f:
+  fol_name = "openml-cc18-res"
+  if not os.path.isdir(fol_name):
+    os.mkdir("openml-cc18-res")
+  with open(f"{fol_name}/results_{dataset_scores['data_id']}_{int(time.time())}.json", "w+") as f:
     json.dump(dataset_scores, f)
 
-def main(ids):
-  #for ds_name, d_id in ids.items():
-  for d_id in ids:
-      
-    dataset_scores = {
-      "data_id": d_id,
-      #"data_name": ds_name 
-    }
+def main(t_ids):
+  for t_id in t_ids:
+    dataset_scores = {}
 
     try:
-      dataset = openml.datasets.get_dataset(d_id)
+      task = openml.tasks.get_task(t_id)
+      dataset = task.get_dataset()
       X, y, _, _ = dataset.get_data(
         target=dataset.default_target_attribute, dataset_format="dataframe"
       )
+      
+      dataset_scores["data_id"] = dataset.id
+      dataset_scores["name"] = dataset.name
+      dataset_scores["metric"] = "roc_auc" if len(np.unique(y)) == 2 else "neg_log_loss"
 
-      if d_id == 42076:
-        y = X["state"]
-        del X["state"]
+#      if d_id == 42076:
+#        y = X["state"]
+#        del X["state"]
 
       # Cap to 100.000 instances
       if len(X) > 100000:
         X, _, y, _ = train_test_split(X, y, stratify=y, train_size=100000, random_state=0, shuffle=True)
 
-      dataset_scores["name"] = dataset.name
-      dataset_scores["metric"] = "roc_auc" if len(np.unique(y)) == 2 else "neg_log_loss"
+      cv = list(StratifiedKFold(n_splits=5, random_state=None, shuffle=True).split(X, y))
 
     except Exception as e:
-      print(f"{d_id} openml failed: {e}\n")
+      print(f"{t_id} OpenML and data prep. failed: {e}\n")
       log_error(e)
       log_score(dataset_scores)
       continue
 
-    cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True).get_n_splits(X, y)
-
     try:
       dataset_scores["fasttext"] = fasttext_run(X, y, cv=cv)
     except Exception as e:
-      print(f"{d_id} fasttext failed: {e}\n")
+      print(f"{t_id} fasttext failed: {e}\n")
       log_error(e)
 
     try:
       dataset_scores["fasttext_100"] = fasttext_run(X, y, cv=cv, pretrainedVectors="100.vec", dim=100)
     except Exception as e:
-      print(f"{d_id} fasttext PT failed: {e}\n")
+      print(f"{t_id} fasttext PT failed: {e}\n")
       log_error(e)
 
     try:
@@ -129,10 +127,8 @@ if __name__ == "__main__":
 #  }
 
   openml.config.apikey = "6582f698e8e48968a7566b87fff8a75e"  # set the OpenML Api Key
-#  benchmark_suite = openml.study.get_suite('OpenML-CC18')  # obtain the benchmark suite
-
-  ids = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 43, 49, 53, 3560, 3902, 3904, 3913, 3917, 3918, 42076, 42078, 42132, 42738, 42803, 43044]
+  benchmark_suite = openml.study.get_suite('OpenML-CC18')  # obtain the benchmark suite
 
   for _ in range(1):
-    main(ids)
+    main(benchmark_suite.tasks)
 
