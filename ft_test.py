@@ -61,7 +61,7 @@ def log_error(e):
 def log_score(dataset_scores):
   if not os.path.isdir(f"roc_log_results"):
     os.mkdir("roc_log_results")
-  with open(f"roc_log_results/results_{d_id}_{int(time.time())}.json", "w+") as f:
+  with open(f"roc_log_results/results_{dataset_scores['data_id']}_{int(time.time())}.json", "w+") as f:
     json.dump(dataset_scores, f)
 
 def main(ids):
