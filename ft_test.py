@@ -58,6 +58,12 @@ def log_error(e):
     out.write(str(e))
   print(e)
 
+def log_score(dataset_scores):
+  if not os.path.isdir(f"roc_log_results"):
+    os.mkdir("roc_log_results")
+  with open(f"roc_log_results/results_{d_id}_{int(time.time())}.json", "w+") as f:
+    json.dump(dataset_scores, f)
+
 def main(ids):
   #for ds_name, d_id in ids.items():
   for d_id in ids:
@@ -87,6 +93,7 @@ def main(ids):
     except Exception as e:
       print(f"{d_id} openml failed: {e}\n")
       log_error(e)
+      log_score(dataset_scores)
       continue
 
     cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True)
@@ -100,14 +107,11 @@ def main(ids):
     try:
       dataset_scores["fasttext_100"] = fasttext_run(X, y, cv=cv.split(X, y), pretrainedVectors="100.vec", dim=100)
     except Exception as e:
-      print(f"{d_id} fasttext failed: {e}\n")
+      print(f"{d_id} fasttext PT failed: {e}\n")
       log_error(e)
 
     try:
-      if not os.path.isdir(f"roc_log_results"):
-        os.mkdir("roc_log_results")
-      with open(f"roc_log_results/results_{d_id}_{int(time.time())}.json", "w+") as f:
-        json.dump(dataset_scores, f)
+      log_score(dataset_scores)
     except Exception as e:
       print(e)
 
