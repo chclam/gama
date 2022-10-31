@@ -35,7 +35,8 @@ def fasttext_run(X, y, cv, pretrainedVectors="", dim=100):
   else:
     scorer = "neg_log_loss"
 
-  scores = cross_val_score(clf,
+  scores = cross_val_score(
+    clf,
     X,
     y, 
     cv=cv,
@@ -45,7 +46,7 @@ def fasttext_run(X, y, cv, pretrainedVectors="", dim=100):
   
   # fill the nannies 
   if any(np.isnan(scores)):
-    dum_score = cross_val_score(DummyClassifier(), X, y, cv=5, scoring=scorer)
+    dum_score = cross_val_score(DummyClassifier(), X, y, cv=cv, scoring=scorer)
     scores = np.nan_to_num(scores, nan=np.nanmean(dum_score))
 
   print(f"{scorer}:", scores)
@@ -96,7 +97,7 @@ def main(ids):
       log_score(dataset_scores)
       continue
 
-    cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True).split(X, y)
+    cv = StratifiedKFold(n_splits=5, random_state=None, shuffle=True).get_n_splits(X, y)
 
     try:
       dataset_scores["fasttext"] = fasttext_run(X, y, cv=cv)
