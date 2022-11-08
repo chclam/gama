@@ -563,8 +563,7 @@ class Gama(ABC):
             activity_meta=[self._post_processing.__class__.__name__],
         ):
             if not self._final_pop:
-                print(f"No pipeline is added to the final population: {self._final_pop}")
-                exit(0)
+                raise Exception(f"No pipeline is added to the final population: {self._final_pop}")
             best_individuals = list(
                 reversed(
                     sorted(
@@ -586,6 +585,23 @@ class Gama(ABC):
             self.cleanup(to_clean[self._store])
         return self
 
+    def _get_init_pop(self, size=50):
+        from sklearn.impute import SimpleImputer
+        
+        # save a pointer to a raw copy of X for FastTextClassifier
+        is_classification = hasattr(self, "_label_encoder")
+
+        fixed_pipeline_extension = [("imputation", SimpleImputer(strategy="median"))]
+
+        _operator_set = self._operator_set
+        _operator_set._safe_compile = partial(
+            self._operator_set._compile,
+            preprocessing_steps=self._fixed_pipeline_extension,
+        )
+
+        return [_operator_set.individual() for _ in range(size)]
+
+
     def _search_phase(
         self, warm_start: Optional[List[Individual]] = None, timeout: float = 1e6
     ):
@@ -597,7 +613,6 @@ class Gama(ABC):
         elif warm_start is None and len(self._final_pop) > 0:
             pop = self._final_pop
         else:
-            # TODO: simply populate pop[0] with FastText individual
             pop = [self._operator_set.individual() for _ in range(50)]
 
             # make fasttextclassifier index first to ensure that fasttext is evaluated

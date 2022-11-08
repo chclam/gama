@@ -4,7 +4,7 @@ from typing import Iterable, Tuple, Union
 from sklearn.metrics import get_scorer
 from sklearn.metrics._scorer import _ProbaScorer, _BaseScorer, SCORERS
 
-classification_metrics = {"accuracy", "roc_auc", "average_precision", "neg_log_loss", "roc_auc_ovr",  "roc_auc_ovo"}
+classification_metrics = {"accuracy", "roc_auc", "average_precision", "neg_log_loss"}
 for metric in ["precision", "recall", "f1"]:
     for average in ["macro", "micro", "samples", "weighted"]:
         classification_metrics.add(f"{metric}_{average}")
@@ -33,16 +33,15 @@ class Metric:
     """ A thin layer around the `scorer` class of scikit-learn. """
 
     def __init__(self, scorer: Union[_BaseScorer, str]):
-        #if isinstance(scorer, str):
-        #    scorer = get_scorer(scorer)
+        if isinstance(scorer, str):
+            self.name = scorer
+            scorer = get_scorer(scorer)
         if not isinstance(scorer, _BaseScorer):
             raise ValueError(
                 "Scorer was not a valid scorer or could not be converted to one."
             )
         self.scorer = scorer
-        #self.name = "roc_auc_ovr" # hard code stuff because of weird bug at 23:30
-        #self.name = "roc_auc_ovo" # hard code stuff because of weird bug at 23:30
-        self.name = reversed_scorers[scorer]
+        #self.name = reversed_scorers[scorer]
         self.requires_probabilities = (
             isinstance(scorer, _ProbaScorer) or self.name == "roc_auc"
         )

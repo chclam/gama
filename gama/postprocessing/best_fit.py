@@ -28,7 +28,6 @@ class BestFitPostProcessing(BasePostProcessing):
         if any([isinstance(p, FastTextClassifier) for p in self._selected_individual.pipeline]):
             x = x_raw
         print("###### Selected individual pipeline ######\n", self._selected_individual.pipeline)
-        import pdb; pdb.set_trace()
         return self._selected_individual.pipeline.fit(x, y)
 
     def to_code(

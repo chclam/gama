@@ -39,11 +39,11 @@ clf_config = {
     "min_samples_split": range(2, 21),
     "min_samples_leaf": range(1, 21),
     # Classifiers
-    FastTextClassifier: {
-        "lr": np.arange(0.1, 1.1, 0.1),
-        "epoch": [5],
-        "wordNgrams": [1]
-    },
+#    FastTextClassifier: {
+#        "lr": np.arange(0.1, 1.1, 0.1),
+#        "epoch": [5],
+#        "wordNgrams": [1]
+#    },
     GaussianNB: {},
     BernoulliNB: {"alpha": [], "fit_prior": []},
     MultinomialNB: {"alpha": [], "fit_prior": []},

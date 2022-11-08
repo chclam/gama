@@ -7,9 +7,10 @@ from sklearn.base import ClassifierMixin, BaseEstimator
 from time import time
 from sklearn.exceptions import NotFittedError
 from random import random
+from sklearn.model_selection import train_test_split 
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100):
+  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False):
     self._estimator_type = "classifier"
     self.classes_ = None
     self.model_filename = None
@@ -20,20 +21,30 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.maxn = maxn
     self.pretrainedVectors=pretrainedVectors # by default dim=100 if pretrainedVectors="" 
     self.dim = dim
+    self.autotune = autotune
     
-  def fit(self, X, y, classes=None):
+  def fit(self, X, y):
     '''
     TODO: Label encode y
     '''
     if not os.path.isdir("cache"):
       os.mkdir("cache")
     data_fn = f"cache/test_data{time()}.txt"
+    val_data_fn = data_fn.replace(".txt", "_val.txt")
 
     if self.classes_ is None:
       self.classes_ = np.unique(y)
     pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
-    data = self.preprocess(X, y, data_fn=data_fn)
-    model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
+
+    if self.autotune:
+      X_train, X_val, y_train, y_val = train_test_split(X, y, stratify=y)
+      self.preprocess(X_train, y_train, data_fn=data_fn)
+      self.preprocess(X_val, y_val, data_fn=val_data_fn)
+      model = fasttext.train_supervised(data_fn, pretrainedVectors=self.pretrainedVectors, autotuneValidationFile=val_data_fn if self.autotune else "", autotuneDuration=300)
+    else:
+      self.preprocess(X, y, data_fn=data_fn)
+      model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
+
     self.model_filename = f"cache/ft_model_{time()}{random()}.bin"
     # save and load the model due to issues with multiprocessing when passing on the fit model.
     model.save_model(self.model_filename)
