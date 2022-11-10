@@ -1,1 +1,1 @@
-{"data_id": 1486, "name": "nomao", "metric": "roc_auc", "dummy": [0.5, 0.5, 0.5, 0.5, 0.5]}
+{"data_id": 1486, "name": "nomao", "metric": "roc_auc", "constantpredictor": [0.5, 0.5, 0.5, 0.5, 0.5]}

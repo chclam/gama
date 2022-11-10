@@ -1,1 +1,1 @@
-{"data_id": 1475, "name": "first-order-theorem-proving", "metric": "neg_log_loss", "fasttext_auto": [-1.725585861617107, -1.6041800634315218, -1.6103090010867662, -1.7849876127008626, -1.4852190644618073]}
+{"data_id": 1475, "name": "first-order-theorem-proving", "metric": "neg_log_loss", "fasttext_autotune": [-1.725585861617107, -1.6041800634315218, -1.6103090010867662, -1.7849876127008626, -1.4852190644618073]}

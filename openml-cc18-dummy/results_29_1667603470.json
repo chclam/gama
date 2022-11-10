@@ -1,1 +1,1 @@
-{"data_id": 29, "name": "credit-approval", "metric": "roc_auc", "dummy": [0.5, 0.5, 0.5, 0.5, 0.5]}
+{"data_id": 29, "name": "credit-approval", "metric": "roc_auc", "constantpredictor": [0.5, 0.5, 0.5, 0.5, 0.5]}

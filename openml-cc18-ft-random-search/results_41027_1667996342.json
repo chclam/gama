@@ -1,0 +1,1 @@
+{"data_id": 41027, "name": "jungle_chess_2pcs_raw_endgame_complete", "metric": "neg_log_loss", "fasttext_time": {"scores": [-0.9270243455090224, -0.9332189108374995, -0.8832122113491253, -0.9078433168424068, -0.9107259186309858], "time": 14.446065902709961}}

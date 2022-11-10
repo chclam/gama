@@ -1,1 +1,1 @@
-{"data_id": 1464, "name": "blood-transfusion-service-center", "metric": "roc_auc", "fasttext_auto": [0.6654483430799221, 0.6438840155945419, 0.6544834307992202, 0.6483709273182956, 0.6598997493734335]}
+{"data_id": 1464, "name": "blood-transfusion-service-center", "metric": "roc_auc", "fasttext_autotune": [0.6654483430799221, 0.6438840155945419, 0.6544834307992202, 0.6483709273182956, 0.6598997493734335]}

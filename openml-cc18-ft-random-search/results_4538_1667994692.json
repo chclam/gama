@@ -1,0 +1,1 @@
+{"data_id": 4538, "name": "GesturePhaseSegmentationProcessed", "metric": "neg_log_loss", "fasttext_time": {"scores": [-1.6094574158046349, -1.6094572891918533, -1.609457289191853, -1.6094573243406902, -1.6094573243406902], "time": 26.292146921157837}}

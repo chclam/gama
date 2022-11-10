@@ -1,1 +1,1 @@
-{"data_id": 41027, "name": "jungle_chess_2pcs_raw_endgame_complete", "metric": "neg_log_loss", "dummy": [-0.9351126109970639, -0.9351126109970641, -0.9351438979687627, -0.9351438979687627, -0.9351428057615782]}
+{"data_id": 41027, "name": "jungle_chess_2pcs_raw_endgame_complete", "metric": "neg_log_loss", "constantpredictor": [-0.9351126109970639, -0.9351126109970641, -0.9351438979687627, -0.9351438979687627, -0.9351428057615782]}

@@ -1,1 +1,1 @@
-{"data_id": 458, "name": "analcatdata_authorship", "metric": "neg_log_loss", "fasttext_auto": [-0.8754273026321141, -0.6533554196425606, -0.8282761499220934, -1.0169070246806824, -0.9391376149624154]}
+{"data_id": 458, "name": "analcatdata_authorship", "metric": "neg_log_loss", "fasttext_autotune": [-0.8754273026321141, -0.6533554196425606, -0.8282761499220934, -1.0169070246806824, -0.9391376149624154]}
