@@ -64,13 +64,13 @@ def random_forest(X, y, cv):
     cv=cv,
     #scoring=scorer, 
     scoring=make_scorer(score_func, greater_is_better=(scorer=="roc_auc"), needs_proba=True, labels=y.unique()),
-    n_jobs=2,
+    n_jobs=1,
     #error_score="raise"
   )
 
   return list(scores)
 
-def fasttext_run(X, y, cv, pretrainedVectors="", dim=100, autotune=False):
+def fasttext_run(X, y, cv, pretrainedVectors="", dim=100, autotune=False, thread=None):
   # Only keep the columns with string values
   # X = X[[col_name for col_name in X.columns if X[col_name].dtype == np.dtype('O')]]
 
@@ -80,7 +80,7 @@ def fasttext_run(X, y, cv, pretrainedVectors="", dim=100, autotune=False):
     y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
 
   if autotune:
-    clf = FastTextClassifier(autotune=autotune)
+    clf = FastTextClassifier(autotune=autotune, thread=thread)
   else:
     clf = FastTextClassifier(minn=0, maxn=0, epoch=5, lr=0.1, pretrainedVectors=pretrainedVectors, dim=dim, autotune=autotune)
 
@@ -95,41 +95,41 @@ def fasttext_run(X, y, cv, pretrainedVectors="", dim=100, autotune=False):
   
   from sklearn.metrics import make_scorer
 
-#  import time
-#  start = time.time()
-#  scores = cross_val_score(
-#    clf,
-#    X,
-#    y,
-#    cv=cv,
-#    #scoring=scorer,
-#    scoring=make_scorer(score_func, greater_is_better=(scorer == "roc_auc"), needs_proba=True, labels=y.unique()),
-#    n_jobs=2 if autotune else -1,
-#    error_score="raise",
-#  )
-
   import time
   start = time.time()
-  from sklearn.model_selection import RandomizedSearchCV
-  params = {
-    "lr": np.arange(0, 1.1, 0.1),
-    "epoch": [15],
-    #"wordNgrams": np.arange(0, 3, 1),
-    #"maxn": [0, 1, 2, 3]
-  }
-
-  search = RandomizedSearchCV(
+  scores = cross_val_score(
     clf,
-    params,
+    X,
+    y,
     cv=cv,
-#    scoring=scorer, 
+    #scoring=scorer,
     scoring=make_scorer(score_func, greater_is_better=(scorer == "roc_auc"), needs_proba=True, labels=y.unique()),
-    n_jobs=4
-  ).fit(X, y)
+    n_jobs=2 if autotune else -1,
+    error_score="raise",
+  )
 
-  best_index = np.argmin(search.cv_results_["rank_test_score"])
-  scores = [search.cv_results_[f'split{k}_test_score'][best_index] for k in range(0, 5)]
-
+#  import time
+#  start = time.time()
+#  from sklearn.model_selection import RandomizedSearchCV
+#  params = {
+#    "lr": np.arange(0, 1.1, 0.1),
+#    "epoch": [15],
+#    #"wordNgrams": np.arange(0, 3, 1),
+#    #"maxn": [0, 1, 2, 3]
+#  }
+#
+#  search = RandomizedSearchCV(
+#    clf,
+#    params,
+#    cv=cv,
+##    scoring=scorer, 
+#    scoring=make_scorer(score_func, greater_is_better=(scorer == "roc_auc"), needs_proba=True, labels=y.unique()),
+#    n_jobs=1
+#  ).fit(X, y)
+#
+#  best_index = np.argmin(search.cv_results_["rank_test_score"])
+#  scores = [search.cv_results_[f'split{k}_test_score'][best_index] for k in range(0, 5)]
+#
   train_time = time.time() - start
   
   print(f"{scorer}:", scores)
@@ -171,8 +171,8 @@ def main(t_ids):
     #"ft": {"pretrainedVectors": "", "dim": 100, "autotune": False},
     #"ft-100": {"pretrainedVectors": "100.vec", "dim": 100, "autotune": False},
     #"ft-300": {"pretrainedVectors": "300.vec", "dim": 300, "autotune": False},
-    "ft-random-cv": {"pretrainedVectors": "", "dim": 100, "autotune": False},
-    #"ft-autotune": {"pretrainedVectors": "", "dim": 100, "autotune": True},
+    #"ft-random-cv": {"pretrainedVectors": "", "dim": 100, "autotune": False},
+    "ft-autotune": {"pretrainedVectors": "", "dim": 100, "autotune": True, "thread": 1},
     #"random-forest": None,
   }
 
@@ -201,9 +201,8 @@ def main(t_ids):
         log_score(dataset_scores)
         continue
 
-
       try:
-        dataset_scores[f"fasttext_{setup_name[3:].replace('search', 'cv').replace('-', '_')}_time"] = fasttext_run(X, y, cv=cv, **setup)
+        dataset_scores[f"fasttext_{setup_name}_time"] = fasttext_run(X, y, cv=cv, **setup)
       except Exception as e:
         import traceback
         traceback.print_exc()
