@@ -28,7 +28,10 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     TODO: Label encode y
     '''
     if not os.path.isdir("cache"):
-      os.mkdir("cache")
+      try:
+        os.mkdir("cache")
+      except Exception as e:
+        print(e)
     data_fn = f"cache/test_data{time()}.txt"
     val_data_fn = data_fn.replace(".txt", "_val.txt")
 
@@ -40,7 +43,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       X_train, X_val, y_train, y_val = train_test_split(X, y, stratify=y)
       self.preprocess(X_train, y_train, data_fn=data_fn)
       self.preprocess(X_val, y_val, data_fn=val_data_fn)
-      model = fasttext.train_supervised(data_fn, pretrainedVectors=self.pretrainedVectors, autotuneValidationFile=val_data_fn if self.autotune else "", autotuneDuration=300)
+      model = fasttext.train_supervised(data_fn, pretrainedVectors=self.pretrainedVectors, autotuneValidationFile=val_data_fn if self.autotune else "")
     else:
       self.preprocess(X, y, data_fn=data_fn)
       model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
@@ -59,9 +62,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     model = fasttext.load_model(self.model_filename)
     classes_pred, probs_pred = model.predict(data, k=len(self.classes_) if ret_proba else 1)
     if not ret_proba:
-      # flatten list and get rid of "__label__" prefix
-      # TODO: conversion to int is only needed if label encoder is used.
-      return np.array([int(x[0].replace("__label__", "")) for x in classes_pred])
+      return np.array([int(x[0].replace("__label__", "")) for x in classes_pred]) # flatten list and get rid of "__label__" prefix
     else:
       ret = []
       for row_classes, row_probs in zip(classes_pred, probs_pred):
@@ -83,6 +84,9 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
   def preprocess(self, X, y=None, del_spec_chars=True, data_fn=f"cache/test_data{time()}.txt") -> str:
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
     data = X.copy()
+    obj_cols = [col for col in X.columns if X[col].dtype == "O"]
+    for obj_col in obj_cols:
+      data[obj_col] = data[obj_col].str.replace("\n", "")
     data = data.astype(str)
     data = data.fillna(" ")
     if y is not None:
