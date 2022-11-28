@@ -8,9 +8,10 @@ from time import time
 from sklearn.exceptions import NotFittedError
 from random import random
 from sklearn.model_selection import train_test_split 
+import multiprocessing
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False):
+  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False, thread=None):
     self._estimator_type = "classifier"
     self.classes_ = None
     self.model_filename = None
@@ -22,6 +23,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
     self.pretrainedVectors=pretrainedVectors # by default dim=100 if pretrainedVectors="" 
     self.dim = dim
     self.autotune = autotune
+    self.thread = multiprocessing.cpu_count() - 1 if thread is None else thread 
     
   def fit(self, X, y):
     '''
@@ -43,7 +45,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
       X_train, X_val, y_train, y_val = train_test_split(X, y, stratify=y)
       self.preprocess(X_train, y_train, data_fn=data_fn)
       self.preprocess(X_val, y_val, data_fn=val_data_fn)
-      model = fasttext.train_supervised(data_fn, pretrainedVectors=self.pretrainedVectors, autotuneValidationFile=val_data_fn if self.autotune else "")
+      model = fasttext.train_supervised(data_fn, pretrainedVectors=self.pretrainedVectors, autotuneValidationFile=val_data_fn if self.autotune else "", thread=self.thread)
     else:
       self.preprocess(X, y, data_fn=data_fn)
       model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
