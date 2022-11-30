@@ -26,9 +26,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 def random_forest(X, y, cv):
-  # Only keep the columns with string values
-  # X = X[[col_name for col_name in X.columns if X[col_name].dtype == np.dtype('O')]]
-
   if isinstance(y, np.ndarray):
     y = pd.Series(LabelEncoder().fit_transform(y))
   else:
@@ -64,7 +61,7 @@ def random_forest(X, y, cv):
     cv=cv,
     #scoring=scorer, 
     scoring=make_scorer(score_func, greater_is_better=(scorer=="roc_auc"), needs_proba=True, labels=y.unique()),
-    n_jobs=1,
+    n_jobs=3,
     #error_score="raise"
   )
 
@@ -166,65 +163,72 @@ def load_dataset_from_disk(d_id, path="."):
     raise f"Error retrieving dataset from disk: {e}"
   return X, y
 
-def main(t_ids):
+def main(ids, suite):
   setups = {
     #"ft": {"pretrainedVectors": "", "dim": 100, "autotune": False},
     #"ft-100": {"pretrainedVectors": "100.vec", "dim": 100, "autotune": False},
     #"ft-300": {"pretrainedVectors": "300.vec", "dim": 300, "autotune": False},
     #"ft-random-cv": {"pretrainedVectors": "", "dim": 100, "autotune": False},
-    "ft-autotune": {"pretrainedVectors": "", "dim": 100, "autotune": True, "thread": 1},
-    #"random-forest": None,
+    #"ft-autotune": {"pretrainedVectors": "", "dim": 100, "autotune": True, "thread": 1},
+    "random-forest": None,
   }
 
   for setup_name, setup in setups.items():
-    for i, (dataname, t_id) in zip(trange(len(t_ids)), t_ids):
+    #for i, id_ in zip(trange(len(ids)), ids):
+    for i, (dataname, id_) in zip(trange(len(ids)), ids):
       dataset_scores = {}
       try:
-        #task = openml.tasks.get_task(t_id)
-    #    dataset = openml.datasets.get_dataset(t_id)
-    #    X, y, _, _ = dataset.get_data(
-    #      target=dataset.default_target_attribute, dataset_format="dataframe"
-    #    )
-        X, y = load_dataset_from_disk(t_id, "prepped_data")
+        if suite == "custom":
+          X, y = load_dataset_from_disk(id_, "prepped_data")
+        elif suite == "openml_cc18":
+          task = openml.tasks.get_task(id_)
+          dataset = task.get_dataset()
+          X, y, _, _ = dataset.get_data(
+            target=dataset.default_target_attribute, dataset_format="dataframe"
+          )
+        else:
+          raise ValueError("Invalid value for suite.")
         
-        dataset_scores["data_id"] = t_id
+        dataset_scores["data_id"] = id_
         dataset_scores["name"] = dataname
+        #dataset_scores["data_id"] = dataset.id
+        #dataset_scores["name"] = dataset.name
         dataset_scores["metric"] = "roc_auc" if len(np.unique(y)) == 2 else "neg_log_loss"
 
         # retrieve the predefined cv folds for experimentation
-        with open(f"cv_folds/{t_id}.pkl", "rb") as f:
+        with open(f"cv_folds/{id_}.pkl", "rb") as f:
           cv = pickle.load(f)
 
       except Exception as e:
-        print(f"{t_id} OpenML and data prep. failed: {e}\n")
+        print(f"{id_} OpenML and data prep. failed: {e}\n")
         log_error(e)
-        log_score(dataset_scores)
+        log_score(dataset_scores, setup_name)
         continue
 
-      try:
-        dataset_scores[f"fasttext_{setup_name}_time"] = fasttext_run(X, y, cv=cv, **setup)
-      except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"{t_id} fasttext PT failed: {e}\n")
-        log_error(e)
+#      try:
+#        dataset_scores[f"fasttext_{setup_name}_time"] = fasttext_run(X, y, cv=cv, **setup)
+#      except Exception as e:
+#        import traceback
+#        traceback.print_exc()
+#        print(f"{id_} fasttext PT failed: {e}\n")
+#        log_error(e)
   
   #    try:
   #      dataset_scores["fasttext_time"] = fasttext_run(X, y, cv=cv, pretrainedVectors="100.vec", dim=100)
   #    except Exception as e:
-  #      print(f"{t_id} fasttext PT failed: {e}\n")
+  #      print(f"{id_} fasttext PT failed: {e}\n")
   #      log_error(e)
 
   #    try:
   #      dataset_scores["fasttext_300_time"] = fasttext_run(X, y, cv=cv, pretrainedVectors="300.vec", dim=300)
   #    except Exception as e:
-  #      print(f"{t_id} fasttext PT failed: {e}\n")
+  #      print(f"{id_} fasttext PT failed: {e}\n")
   #      log_error(e)
   #
   #    try:
   #      dataset_scores["fasttext_auto_time"] = fasttext_run(X, y, cv=cv, autotune=True)
   #    except Exception as e:
-  #      print(f"{t_id} fasttext PT failed: {e}\n")
+  #      print(f"{id_} fasttext PT failed: {e}\n")
   #      log_error(e)
 
   #    try:
@@ -232,14 +236,14 @@ def main(t_ids):
   #    except Exception as e:
   #      import traceback
   #      traceback.print_exc()
-  #      print(f"{t_id} fasttext PT failed: {e}\n")
+  #      print(f"{id_} fasttext PT failed: {e}\n")
   #      log_error(e)
   #
-#      try:
-#        dataset_scores["random_forest"] = random_forest(X, y, cv=cv)
-#      except Exception as e:
-#        print(f"{t_id} fasttext failed: {e}\n")
-#        log_error(e)
+      try:
+        dataset_scores["random_forest"] = random_forest(X, y, cv=cv)
+      except Exception as e:
+        print(f"{id_} fasttext failed: {e}\n")
+        log_error(e)
 
       try:
         log_score(dataset_scores, setup_name)
@@ -251,13 +255,13 @@ if __name__ == "__main__":
   # Getting the data set
 
   ids = {
-    "beerreviews": 42078,
-    "road_safety": 42803,
-    "traffic_violations": 42132,
-    "drug_directory": 43044,
-    "kickstarter": 42076,
-    "openpayments": 42738,
-    "midwest": 42530,
+#    "beerreviews": 42078,
+#    "road_safety": 42803,
+#    "traffic_violations": 42132,
+#    "drug_directory": 43044,
+#    "kickstarter": 42076,
+#    "openpayments": 42738,
+#    "midwest": 42530,
     "metobjects": "MET_OBJECTS",
     "cacao_flavors": 42133,
     "anime_data": 43508,
@@ -269,8 +273,9 @@ if __name__ == "__main__":
   }
 
   openml.config.apikey = "6582f698e8e48968a7566b87fff8a75e"  # set the OpenML Api Key
-  #benchmark_suite = openml.study.get_suite('OpenML-CC18')  # obtain the benchmark suite
+  benchmark_suite = openml.study.get_suite('OpenML-CC18')  # obtain the benchmark suite
 
   for _ in range(1):
-    main(ids.items())
+    main(ids.items(), "custom") # custom dataset
+    #main(benchmark_suite.tasks, "openml_cc18") # openml-cc18
 

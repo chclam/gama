@@ -64,7 +64,7 @@ class GamaClassifier(Gama):
             y = self._label_encoder.inverse_transform(y)
         return y
 
-    def _predict_proba(self, x: pd.DataFrame, x_raw=None):
+    def _predict_proba(self, x: pd.DataFrame):
         """ Predict the class probabilities for input x.
 
         Predict target for x, using the best found pipeline(s) during the `fit` call.
@@ -80,7 +80,8 @@ class GamaClassifier(Gama):
             Array of shape (N, K) with class probabilities where N is len(x),
              and K is the number of class labels found in `y` of `fit`.
         """
-        return self.model.predict_proba(x, x_raw)  # type: ignore
+
+        return self.model.predict_proba(x)  # type: ignore
 
     def predict_proba(self, x: Union[pd.DataFrame, np.ndarray]):
         """ Predict the class probabilities for input x.
@@ -98,9 +99,9 @@ class GamaClassifier(Gama):
             Array of shape (N, K) with class probabilities where N is len(x),
              and K is the number of class labels found in `y` of `fit`.
         """
-        x_raw = x.copy()
-        x = self._prepare_for_prediction(x)
-        return self._predict_proba(x, x_raw)
+        if not any(isinstance(step, FastTextClassifier) for step in self.model):
+          x = self._prepare_for_prediction(x)
+        return self._predict_proba(x)
 
     def predict_proba_from_file(
         self,
